@@ -1,0 +1,96 @@
+{
+  "session": {
+    "sessionId": "mock-session-001",
+    "userName": "Alandelone",
+    "agentName": "Hermes-Prime",
+    "connectedAt": "2026-08-18T20:00:00Z"
+  },
+  "initialTranscripts": [
+    {
+      "id": "msg-1",
+      "role": "user",
+      "text": "Hey Hermes, can you examine the project docs and organize our multi-agent architecture notes?",
+      "timestamp": "2026-08-18T20:00:05Z"
+    },
+    {
+      "id": "msg-2",
+      "role": "agent",
+      "text": "Certainly! I will dispatch two subagents: one to read the local workspace docs and another to draft the architecture diagram.",
+      "timestamp": "2026-08-18T20:00:08Z"
+    }
+  ],
+  "initialSubagents": [
+    {
+      "id": "sub-101",
+      "name": "Doc Scanner",
+      "role": "Codebase Researcher",
+      "status": "running",
+      "progress": 60,
+      "logs": [
+        "Scanning /docs directory...",
+        "Parsed docs/project-index.md",
+        "Extracted 4 module definitions"
+      ]
+    },
+    {
+      "id": "sub-102",
+      "name": "Diagram Builder",
+      "role": "Architecture Visualizer",
+      "status": "running",
+      "progress": 30,
+      "logs": [
+        "Generating mermaid diagram nodes...",
+        "Linking subagent communication channels"
+      ]
+    }
+  ],
+  "replayTimeline": [
+    {
+      "delayMs": 200,
+      "event": {
+        "type": "agent_state",
+        "state": "thinking"
+      }
+    },
+    {
+      "delayMs": 400,
+      "event": {
+        "type": "subagent_event",
+        "event": "progress",
+        "subagentId": "sub-101",
+        "progress": 100,
+        "status": "completed",
+        "log": "Completed workspace indexing successfully."
+      }
+    },
+    {
+      "delayMs": 600,
+      "event": {
+        "type": "subagent_event",
+        "event": "spawned",
+        "subagentId": "sub-103",
+        "name": "Summary Writer",
+        "role": "Report Generator",
+        "status": "running",
+        "progress": 10,
+        "log": "Compiling structured notes from sub-101 output..."
+      }
+    },
+    {
+      "delayMs": 800,
+      "event": {
+        "type": "transcript_chunk",
+        "role": "agent",
+        "chunk": "Subagent Doc Scanner has finished reviewing the docs. Subagent Summary Writer is now compiling the final brief.",
+        "isFinal": true
+      }
+    },
+    {
+      "delayMs": 1000,
+      "event": {
+        "type": "agent_state",
+        "state": "speaking"
+      }
+    }
+  ]
+}

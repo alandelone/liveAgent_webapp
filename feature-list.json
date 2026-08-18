@@ -1,0 +1,56 @@
+{
+  "project": "livechat_agent",
+  "version": "0.1.0",
+  "description": "Real-time Voice & Multi-Agent Collaboration Web Interface wrapping Hermes",
+  "features": [
+    {
+      "id": "FEAT-001",
+      "category": "Core / Connection",
+      "name": "Full-Duplex Hermes WebSocket Gateway",
+      "description": "Establish and maintain a resilient bi-directional WebSocket connection with Hermes agent server (including auto-reconnect and heartbeat ping/pong).",
+      "passes": false
+    },
+    {
+      "id": "FEAT-002",
+      "category": "Audio / Voice",
+      "name": "Bi-directional Real-time Voice Streaming",
+      "description": "Microphone audio capture via Web Audio API / AudioWorklet, streaming to backend, and low-latency audio chunk playback with barge-in / interruption support.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-003",
+      "category": "UI / Visualization",
+      "name": "Central Voice Orb & Satellite Subagent Orbs",
+      "description": "Central ambient reactive voice visualizer for the main agent with dynamic satellite orbs spawned per active subagent reflecting their real-time state (idle, thinking, active, done).",
+      "passes": false
+    },
+    {
+      "id": "FEAT-004",
+      "category": "UI / Layout",
+      "name": "3-Pane Swappable Layout Architecture",
+      "description": "A 3-pane layout containing Left (Chat Transcripts), Middle (Central & Satellite Orbs), and Right (Multi-Agent Task Tree & Execution Logs) with support for panel swapping and collapsing.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-005",
+      "category": "UI / Chat",
+      "name": "Real-Time Streaming Chat Transcript",
+      "description": "Live streaming markdown rendering for agent replies, user speech transcription, timestamping, code block highlighting, and inline tool execution chips.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-006",
+      "category": "Multi-Agent / Inspector",
+      "name": "Multi-Agent Task Tree & Parallel Logs",
+      "description": "Hierarchical display of dispatched subagent tasks, live progress bars, status indicators, stdout/stderr streams, and artifact outputs.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-007",
+      "category": "Testing / Sandbox",
+      "name": "Deterministic Mock Hermes Server & Sandbox Replay",
+      "description": "Mock WebSocket server replay engine using test-fixtures/seed-data.json for automated, deterministic headless testing without requiring physical microphone or live backend.",
+      "passes": false
+    }
+  ]
+}
