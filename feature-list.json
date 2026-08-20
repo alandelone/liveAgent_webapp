@@ -1,56 +1,117 @@
 {
   "project": "livechat_agent",
   "version": "0.1.0",
-  "description": "Real-time Voice & Multi-Agent Collaboration Web Interface wrapping Hermes",
+  "description": "Hermes Voice UI — Mobile-First Real-Time Voice Interface for the Hermes Agent Runtime",
+  "phases": {
+    "0": "Foundation",
+    "1": "Voice (the actual product)",
+    "2": "Multi-Agent Visuals",
+    "3": "Panels & Layout"
+  },
   "features": [
     {
       "id": "FEAT-001",
-      "category": "Core / Connection",
-      "name": "Full-Duplex Hermes WebSocket Gateway",
-      "description": "Establish and maintain a resilient bi-directional WebSocket connection with Hermes agent server (including auto-reconnect and heartbeat ping/pong).",
-      "passes": false
+      "phase": 0,
+      "category": "Protocol",
+      "name": "WebSocket Event Bus with Sequencing & Versioning",
+      "description": "Full-duplex WebSocket connection multiplexing binary audio frames and structured JSON event envelopes over a single socket. Every event carries a monotonic `seq` number for gap detection on reconnect. Initial handshake includes `protocolVersion` for compatibility checking. Heartbeat ping/pong for liveness. Validate all incoming events against schema; gracefully ignore unknown event types for forward compatibility.",
+      "passes": true
     },
     {
       "id": "FEAT-002",
-      "category": "Audio / Voice",
-      "name": "Bi-directional Real-time Voice Streaming",
-      "description": "Microphone audio capture via Web Audio API / AudioWorklet, streaming to backend, and low-latency audio chunk playback with barge-in / interruption support.",
-      "passes": false
+      "phase": 0,
+      "category": "Protocol",
+      "name": "Connection Resilience & Session Recovery",
+      "description": "Automatic reconnection with exponential backoff on network drops. Preserve sessionId across reconnects. On reconnect, send last-seen `seq` to Hermes so missed events can be replayed. Visible connection-state indicator (connected / reconnecting / offline). Critical for mobile where network drops are constant and silence during disconnect must not be mistaken for Hermes thinking.",
+      "passes": true
     },
     {
       "id": "FEAT-003",
-      "category": "UI / Visualization",
-      "name": "Central Voice Orb & Satellite Subagent Orbs",
-      "description": "Central ambient reactive voice visualizer for the main agent with dynamic satellite orbs spawned per active subagent reflecting their real-time state (idle, thinking, active, done).",
-      "passes": false
+      "phase": 0,
+      "category": "Protocol / Dev Infrastructure",
+      "name": "Deterministic Mock Server & JSONL Session Recorder",
+      "description": "Standalone mock WebSocket server that replays test-fixtures/seed-data.json event timelines and synthetic audio chunks for 100% deterministic headless testing (Vitest + Playwright). Additionally, a session recorder that captures real Hermes sessions as timestamped JSONL traces (e.g. session-2026-08-18.jsonl) which can be replayed for UI development without running Hermes. Frontend devs can simulate: Hermes speaking, delegating, agents working/failing, user interrupting, reconnection — all from recorded traces.",
+      "passes": true
     },
     {
       "id": "FEAT-004",
-      "category": "UI / Layout",
-      "name": "3-Pane Swappable Layout Architecture",
-      "description": "A 3-pane layout containing Left (Chat Transcripts), Middle (Central & Satellite Orbs), and Right (Multi-Agent Task Tree & Execution Logs) with support for panel swapping and collapsing.",
-      "passes": false
+      "phase": 0,
+      "category": "Protocol",
+      "name": "Agent Manifest Consumption & Dynamic Active Constellation",
+      "description": "On connection, receive AGENT_MANIFEST from Hermes defining available agents (id, name, color, icon, isOrchestrator). Dynamically generate the orb constellation from this manifest — no hardcoded agent identities. Support mid-session manifest updates when Hermes creates or retires agents at runtime. Display only Hermes + currently active/relevant agents (active constellation). Dormant agents stay hidden until Hermes invokes them.",
+      "passes": true
     },
     {
       "id": "FEAT-005",
-      "category": "UI / Chat",
-      "name": "Real-Time Streaming Chat Transcript",
-      "description": "Live streaming markdown rendering for agent replies, user speech transcription, timestamping, code block highlighting, and inline tool execution chips.",
-      "passes": false
+      "phase": 1,
+      "category": "State Machine",
+      "name": "Unified Agent State Machine (Hermes-Driven)",
+      "description": "Implement the state machine (IDLE → LISTENING → PROCESSING → SPEAKING → INTERRUPTED/DONE → IDLE) for the Main Hermes agent, plus auxiliary states (DELEGATED, TOOL_CALL, BACKGROUND, COMPLETED) for Side Agents. The frontend MAY optimistically predict state transitions for UI immediacy (e.g. show LISTENING on mic tap before Hermes confirms). Hermes events remain the source of truth — when an AGENT_STATE event arrives, the frontend reconciles to match. States are semantically distinct: thinking ≠ executing ≠ waiting.",
+      "passes": true
     },
     {
       "id": "FEAT-006",
-      "category": "Multi-Agent / Inspector",
-      "name": "Multi-Agent Task Tree & Parallel Logs",
-      "description": "Hierarchical display of dispatched subagent tasks, live progress bars, status indicators, stdout/stderr streams, and artifact outputs.",
-      "passes": false
+      "phase": 1,
+      "category": "Voice",
+      "name": "Streaming Voice Pipeline with Echo Cancellation & Input Fallbacks",
+      "description": "AudioWorklet-based microphone capture streaming binary audio to Hermes. Chunked TTS audio playback queue that begins playing on the first received audio chunk (not after full response). Audio processing must never block the UI thread. Echo cancellation / self-trigger protection so Hermes TTS output is not detected by VAD as new user speech. Push-to-talk mode as fallback for noisy environments. Text input field as fallback for code snippets, URLs, filenames, and microphone permission failures. Voice-first ≠ voice-only.",
+      "passes": true
     },
     {
       "id": "FEAT-007",
-      "category": "Testing / Sandbox",
-      "name": "Deterministic Mock Hermes Server & Sandbox Replay",
-      "description": "Mock WebSocket server replay engine using test-fixtures/seed-data.json for automated, deterministic headless testing without requiring physical microphone or live backend.",
-      "passes": false
+      "phase": 1,
+      "category": "Voice",
+      "name": "Barge-in & Interruption Handling",
+      "description": "When VAD detects user speech during Hermes playback: immediately stop TTS audio, send USER_INTERRUPT to Hermes, flush the playback queue, and begin a new listening turn. 'Stop speaking' ≠ 'Stop task': voice interruption never terminates background tasks (TASK_START/PROGRESS/COMPLETE events continue undisturbed). Explicit task cancellation (TASK_CANCEL) is a separate future command.",
+      "passes": true
+    },
+    {
+      "id": "FEAT-008",
+      "phase": 1,
+      "category": "Spatial UI",
+      "name": "Central Hermes Orb with Audio-Reactive Animation",
+      "description": "Permanently anchored center orb representing Hermes. Visual treatment maps 1:1 to the state machine: Idle (gentle breathing), Listening (ripple waves modulated by mic input amplitude), Processing (pulsing think animation), Speaking (undulations modulated by TTS output amplitude), Executing (gear/progress indicator), Error (red glow + icon). States communicated through animation + icon + label — not color alone (color identifies agent identity, not state). Start simple; defer shader/glow polish until voice works reliably.",
+      "passes": true
+    },
+    {
+      "id": "FEAT-009",
+      "phase": 2,
+      "category": "Spatial UI",
+      "name": "Active Satellite Constellation & Delegation Visuals",
+      "description": "Dynamic constellation of satellite orbs positioned around center Hermes, spawned from the Agent Manifest (FEAT-004). Only currently active/relevant agents shown. Each orb renders its assigned color, icon, label, and state animation using the auxiliary state machine. On delegation (TASK_START from Hermes), an energy beam visually connects Hermes to the target satellite. On completion, beam retracts and satellite returns to idle. Agents that Hermes creates at runtime appear dynamically; agents that go dormant fade out.",
+      "passes": true
+    },
+    {
+      "id": "FEAT-010",
+      "phase": 2,
+      "category": "Interaction",
+      "name": "Gesture Controls & Mode Switching",
+      "description": "Mobile-native gesture layer: Tap center Hermes orb to toggle listening on/off. Tap a satellite orb to enter Direct Agent Mode (sends targetAgentId to Hermes — frontend does NOT bypass Hermes). Swipe from center toward a satellite as alternative gesture for Direct Mode. Swipe back or tap center to return to Orchestrator Mode. Clearly show which agent currently has audio focus so the user always knows who they're talking to. Voice-based switching ('Talk to Coding') is a Hermes capability, not a frontend feature.",
+      "passes": true
+    },
+    {
+      "id": "FEAT-011",
+      "phase": 3,
+      "category": "Layout",
+      "name": "Responsive Layout: Mobile Voice Room → Desktop 3-Pane",
+      "description": "On narrow viewports (mobile): full-screen spatial voice room with bottom-sheet drawers for transcripts and task logs — no heavy sidebars or chat windows on the main screen. On wide viewports (desktop/tablet): 3-pane layout — Left (chat transcripts), Center (voice room), Right (task tree & logs) — with swappable and independently collapsible panels.",
+      "passes": true
+    },
+    {
+      "id": "FEAT-012",
+      "phase": 3,
+      "category": "Panels",
+      "name": "Streaming Chat Transcript Panel",
+      "description": "Live incremental display of user STT transcriptions and Hermes text deltas with typewriter streaming. Markdown rendering, syntax-highlighted code blocks, and inline tool-call status chips. Artifact attachments from Hermes rendered as structured cards (not buried in transcript text). Scrolls to latest; tap to freeze scroll. Optional on mobile (lives in bottom-sheet drawer).",
+      "passes": true
+    },
+    {
+      "id": "FEAT-013",
+      "phase": 3,
+      "category": "Panels",
+      "name": "Multi-Agent Task Tree & Execution Log Panel (Read-Only)",
+      "description": "Read-only hierarchical tree view of TASK_START / TASK_PROGRESS / TASK_COMPLETE events showing Hermes delegation structure. Live progress indicators, collapsible log streams, and artifact output previews. Users see 'Coding: running tests' rather than raw terminal output; detailed logs live inside expandable sections. This panel visualizes Hermes execution — it does not control it.",
+      "passes": true
     }
   ]
 }

@@ -9,7 +9,7 @@
 - `stage-gates/`: Strict unidirectional pipeline contracts (`01-discovery-brief.md` -> `02-tech-design.md` -> `03-execution-brief.md` -> `04-verification-report.md`).
 - `active-session/`: Ephemeral execution context (`progress.md`) and agent handoff (`HANDOFF.md`).
 - `repomemory/`: Long-term system invariants (`project-context.md`), decisions (`decision.md`), debugging logs (`findings.md`), and historical corrections (`lessons-learned.md`).
-- `test-fixtures/`: Deterministic testing fixtures (`seed-data.json` / `seed-data.sql`).
+- `test-fixtures/`: Deterministic testing fixtures (`seed-data.json`).
 
 ## Agent Roles & Stage Gates
 1. **Planner**: Analyzes problem space (`01-discovery-brief.md`), creates tech design (`02-tech-design.md`), and defines execution DoD (`03-execution-brief.md`).

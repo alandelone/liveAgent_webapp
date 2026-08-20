@@ -1,11 +1,56 @@
 # Active Session Progress
 
 ## Operations Log
-- **2026-08-18**: Repository guidelines and initial scaffold created.
-- **2026-08-18**: Completed `/grill-me` design alignment:
-  - Clarified product vision: Real-time voice & multi-agent collaboration web UI wrapping Hermes.
-  - Established 3-pane swappable layout (Left: Chat transcripts, Middle: Central Voice Orb + dynamic Satellite Subagent Orbs, Right: Multi-Agent Task Tree & Logs).
-  - Defined architecture boundary: `livechat_agent` handles presentation/streaming; OS file tools and subagent execution permissions belong strictly to `hermes-agent`.
-  - Derived 7 ground-truth features in `feature-list.json`.
-  - Locked architecture invariants and red lines in `repomemory/decision.md` & `repomemory/project-context.md`.
-  - Established deterministic sandbox in `init.sh` and `test-fixtures/seed-data.json`.
+- **2026-08-18 20:22**: Repository structure and initial AGENTS.md scaffold created.
+- **2026-08-18 20:27**: `/grill-me` session — aligned product vision, UI layout, tech stack, and architecture boundary.
+- **2026-08-18 21:02**: Ingested `docs/mobile-web-real-time-multi-agent-voice-interface.md` — created `docs/product-vision.md`, refined feature list to 12 items, aligned protocol spec and test fixtures.
+- **2026-08-18 21:07**: Expert review — restructured feature list by dependency layer, added missing features (connection resilience, manifest consumption, state machine), removed backend-owned features (voice identity).
+- **2026-08-18 21:22**: Applied 50-point architecture review. Major changes:
+  - **Reframed project identity** from "Multi-Agent Interface" to **"Hermes Voice UI"** — Hermes is the brain, this project is eyes/ears/mouth.
+  - **Expanded red lines** from 4 to 8 (added: Hermes-only runtime, no frontend delegation, event-driven state, read-only task tree).
+  - **Added to protocol**: `seq` numbers on all events, `protocolVersion` handshake, `CLIENT_HELLO` with `lastSeq` for gap recovery, `turnId` correlation, reserved `TASK_CANCEL` and `ARTIFACT` event types.
+  - **Added to features**: Echo cancellation, push-to-talk fallback, text input fallback, client instrumentation/latency KPIs, active constellation (not permanent orbs), JSONL session recording for dev replay.
+  - **Moved mock/replay server to Phase 0** — development accelerator, not just a test tool.
+  - **Added 3 new ADRs**: WebSocket-first (no premature WebRTC), active constellation, echo cancellation & multi-modal input.
+  - **Defined north-star MVP demo**: User speaks → Hermes delegates → UI shows orbs working → Hermes speaks → user interrupts → TTS stops → background continues → new turn.
+- **2026-08-18 21:43**: Completed **Phase 0: Foundation** (FEAT-001, FEAT-002, FEAT-003, FEAT-004).
+  - Scaffolded React 18/19 + TypeScript + Vite + Tailwind CSS + Vitest project.
+  - Implemented `src/protocol/schemas.ts` with comprehensive Zod schemas and forward-compatibility handling.
+  - Implemented `src/protocol/eventBus.ts` with monotonic sequence tracking, gap detection, and binary audio multiplexing.
+  - Implemented `src/protocol/HermesClient.ts` with exponential backoff reconnect, `lastSeq` gap resumption, and heartbeat ping/pong.
+  - Implemented `src/mock/mockServer.ts`, `src/mock/sessionRecorder.ts`, and `src/mock/sessionReplayer.ts` with deterministic `test-fixtures/seed-data.json` replay and JSONL trace capabilities.
+  - Implemented `src/state/manifestStore.ts` and `src/state/constellationStore.ts` for dynamic agent manifest and active constellation management.
+  - Verified 100% passing tests (19/19) across 6 test suites with clean TypeScript typecheck.
+- **2026-08-18 21:45**: Completed **Phase 1: Voice (the actual product)** (FEAT-005, FEAT-006, FEAT-007, FEAT-008).
+  - Implemented `src/state/agentStateMachine.ts` with optimistic local prediction and Hermes authoritative state reconciliation.
+  - Implemented `src/audio/audioPlaybackQueue.ts` for non-blocking streaming chunked audio playback with RMS volume calculation.
+  - Implemented `src/audio/echoSuppressor.ts` for self-trigger acoustic protection.
+  - Implemented `src/audio/bargeInManager.ts` for instant voice interruption, TTS stopping, and `USER_INTERRUPT` dispatch while preserving background tasks.
+  - Implemented `src/audio/voiceController.ts` coordinating mic capture, PTT mode, text input fallback, and client transport.
+  - Implemented `src/components/orb/CentralHermesOrb.tsx` with audio-reactive soundwave undulations, pulse animations, and touch interactions.
+  - Implemented `src/components/voice/InputFallbackBar.tsx` for multi-modal text and PTT fallback.
+  - Integrated into `src/App.tsx` and verified 29/29 passing tests across 9 test suites.
+- **2026-08-18 21:46**: Completed **Phase 2: Multi-Agent Visuals** (FEAT-009, FEAT-010).
+  - Implemented `src/components/constellation/SatelliteOrb.tsx` for dynamic subagent orb rendering with identity, state badge, and focus rings.
+  - Implemented `src/components/constellation/DelegationBeams.tsx` for animated SVG energy connection lines during active delegations.
+  - Implemented `src/state/modeStore.ts` and `src/components/constellation/DirectModeIndicator.tsx` for Direct Agent Mode management and `USER_TARGET` protocol dispatching.
+  - Implemented `src/components/constellation/ConstellationView.tsx` with symmetric radial positioning ($R=175\text{px}$) and touch/click interactions.
+  - Integrated into `src/App.tsx` and verified 33/33 passing tests across 11 test suites.
+- **2026-08-18 21:49**: Completed **Phase 3: Panels & Layout** (FEAT-011, FEAT-012, FEAT-013).
+  - Implemented `src/state/transcriptStore.ts` for real-time incremental text delta streaming, turn correlation, and artifact management.
+  - Implemented `src/state/taskTreeStore.ts` for read-only multi-agent execution hierarchy and progress tracking.
+  - Implemented `src/state/layoutStore.ts` for responsive 3-pane desktop layout and mobile slide-up drawers.
+  - Implemented `src/components/panels/TranscriptPanel.tsx` with streaming chat bubbles, agent indicators, code blocks, and artifacts.
+  - Implemented `src/components/panels/TaskTreePanel.tsx` with live progress bars, subagent badges, and collapsible execution logs.
+- **2026-08-20 19:15**: UI Refinements & Voice-Reactive Animations:
+  - Replaced CSS ping animation in `CentralHermesOrb` with 4-layered concentric ripple soundwaves responsive to mic RMS volume.
+  - Added microphone Web Audio capture (`AudioContext`, `AnalyserNode`) and browser-native SpeechRecognition (`webkitSpeechRecognition`) in `src/audio/voiceController.ts` for live, real-time STT.
+  - Integrated connection state tags (`idle`, `reconnecting`, `connecting`, `offline`) directly into the central Orb.
+  - Cleaned header title to "Live Agent" and removed unused decorative CPU icon and reconnect badges.
+  - Text cleanup: removed "Tap to speak" and hardcoded "Hermes" text strings from the UI.
+- **2026-08-20 19:40**: Local Hermes Backend Bridge & Dynamic Profile Synchronization:
+  - Created `server.py` WebSocket bridge server on `ws://127.0.0.1:8765/ws`.
+  - Added dynamic filesystem profile scanner reading `C:\Users\Alandelone\AppData\Local\hermes\profiles\` to automatically synchronize sub-agents into `AGENT_MANIFEST`.
+  - Created `subagents.config.json` allowing user-configured visibility limits (`max_visible_subagents`) and custom theme overrides.
+  - Added `npm run server` script to `package.json`.
+  - Verified 100% test pass rate (41/41 tests across 15 test suites) and 0 TypeScript errors.

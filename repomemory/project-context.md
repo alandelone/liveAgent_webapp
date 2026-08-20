@@ -1,38 +1,49 @@
 # Project Context & Invariants
 
-## Product Vision
-`livechat_agent` is a real-time, voice-first web collaboration interface designed to wrap the **Hermes** agent framework. It enables users to have fluid, natural voice and text conversations with a primary agent to brainstorm concepts, pull and organize local workstation files, and coordinate parallel background subagents.
+## Product Identity
+`livechat_agent` is a **Hermes Voice UI** — a mobile-first, real-time voice interface for the Hermes agent runtime. Hermes is the brain; this project is the eyes, ears, and mouth. Full vision in [`docs/product-vision.md`](../docs/product-vision.md). Detailed spec in [`docs/mobile-web-real-time-multi-agent-voice-interface.md`](../docs/mobile-web-real-time-multi-agent-voice-interface.md).
 
-## Core Interaction Architecture
-```
-+-----------------------------------------------------------------------------------+
-|                                  LIVECHAT_AGENT                                   |
-|                                                                                   |
-|  +--------------------+   +--------------------------------+   +---------------+  |
-|  |     LEFT PANE      |   |          MIDDLE PANE           |   |  RIGHT PANE   |  |
-|  |  Chat Transcripts  |   |    Central Hero Voice Orb      |   |  Multi-Agent  |  |
-|  |  & Live Markdown   |   |   + Dynamic Satellite Orbs     |   |   Task Tree   |  |
-|  |                    |   |    (Subagents Activity)        |   |   & Logs      |  |
-|  +--------------------+   +--------------------------------+   +---------------+  |
-+------------------------------------------+----------------------------------------+
-                                           | Full-Duplex WebSocket
-                                           v
-                         +-----------------------------------+
-                         |      Hermes Agent Backend         |
-                         | (C:\Users\Alandelone\hermes-agent)|
-                         | - Local File Tools                |
-                         | - Subagent Orchestration Engine   |
-                         | - LLM & Audio Pipeline            |
-                         +-----------------------------------+
+## Architecture: User ↔ Voice/UI ↔ Hermes
+```text
+┌─────────────────────────────────────────────┐
+│              MOBILE WEB APP                 │  ← This project (Layer 1)
+│  Spatial Voice Room · Active Constellation  │
+│  Gestures · Transcripts · Task Tree        │
+└────────────────────┬────────────────────────┘
+                     │ WebSocket (Audio + JSON Events)
+                     │ seq numbers · protocolVersion
+                     ▼
+┌─────────────────────────────────────────────┐
+│           HERMES AGENT RUNTIME              │  ← Layers 2-4
+│  VAD · STT · LLM · TTS · Tools · Agents    │
+└─────────────────────────────────────────────┘
 ```
 
-## System Invariants & Non-Negotiable Red Lines
-1. **Interface & Responsibility Boundary**:
-   - `livechat_agent` is strictly a presentation and real-time streaming interface.
-   - All filesystem operations, shell execution, permission control, and subagent process management belong to `hermes-agent`. `livechat_agent` must NEVER bypass Hermes to execute OS-level destructive commands.
-2. **State Truth Source**:
-   - UI state (subagent status, chat transcripts, voice state) is strictly driven by the structured event stream from Hermes / Mock Server. No fabricated or phantom client state mutations.
-3. **Deterministic Verification Invariant**:
-   - All feature pass states (`passes: true` in `feature-list.json`) must be proven by deterministic automated test suites executing against `test-fixtures/seed-data.json`.
-4. **Audio & UI Main Thread Isolation**:
-   - Web Audio processing and chunk queuing must not block the React UI render cycle. High frequency subagent log emissions must be throttled/buffered to prevent frame drops or audio stutter.
+## System Invariants (Non-Negotiable)
+
+1. **Hermes is the only agent runtime.**
+   - Frontend never reasons, delegates, executes tools, or manages agent lifecycles.
+
+2. **Frontend never decides delegation.**
+   - Center orb = visual Hermes, not frontend orchestrator. Direct Mode sends `targetAgentId` to Hermes.
+
+3. **Optimistic UI state with Hermes reconciliation.**
+   - Frontend MAY predict state transitions for immediacy (e.g. instant "listening" on mic tap). Hermes events remain source of truth — frontend reconciles when they arrive.
+
+4. **Barge-in does not cancel background work.**
+   - Voice interruption stops TTS only. Background tasks continue. "Stop speaking" ≠ "Stop task."
+
+5. **Audio never blocks the UI thread.**
+   - AudioWorklet for capture/playback. Throttle high-frequency telemetry to prevent frame drops.
+
+6. **Echo cancellation is mandatory.**
+   - Without it, Hermes TTS triggers VAD → infinite self-interruption loop.
+
+7. **Active constellation, not permanent display.**
+   - Show Hermes + currently active agents. Dormant agents hidden until invoked. No hardcoded agent identities.
+
+8. **Task tree is read-only.**
+   - Visualizes Hermes execution. Does not control it.
+
+9. **First-audio latency is the core KPI.**
+   - TTS starts at first sentence boundary. Measure `speech_end → first audible response`.

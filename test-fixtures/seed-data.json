@@ -1,96 +1,163 @@
 {
+  "protocolVersion": 1,
   "session": {
     "sessionId": "mock-session-001",
     "userName": "Alandelone",
-    "agentName": "Hermes-Prime",
     "connectedAt": "2026-08-18T20:00:00Z"
+  },
+  "manifest": {
+    "type": "AGENT_MANIFEST",
+    "seq": 1,
+    "agents": [
+      { "id": "hermes", "name": "Hermes", "color": "#6366F1", "icon": "brain", "isOrchestrator": true },
+      { "id": "research", "name": "Research", "color": "#A855F7", "icon": "book-open" },
+      { "id": "coding", "name": "Coding", "color": "#3B82F6", "icon": "code" },
+      { "id": "browser", "name": "Browser", "color": "#10B981", "icon": "globe" },
+      { "id": "automation", "name": "Automation", "color": "#F59E0B", "icon": "cpu" }
+    ]
   },
   "initialTranscripts": [
     {
-      "id": "msg-1",
-      "role": "user",
-      "text": "Hey Hermes, can you examine the project docs and organize our multi-agent architecture notes?",
-      "timestamp": "2026-08-18T20:00:05Z"
+      "type": "STT_FINAL",
+      "seq": 2,
+      "turnId": "turn_001",
+      "text": "Analyze the codebase docs and summarize the multi-agent voice architecture."
     },
     {
-      "id": "msg-2",
-      "role": "agent",
-      "text": "Certainly! I will dispatch two subagents: one to read the local workspace docs and another to draft the architecture diagram.",
-      "timestamp": "2026-08-18T20:00:08Z"
-    }
-  ],
-  "initialSubagents": [
-    {
-      "id": "sub-101",
-      "name": "Doc Scanner",
-      "role": "Codebase Researcher",
-      "status": "running",
-      "progress": 60,
-      "logs": [
-        "Scanning /docs directory...",
-        "Parsed docs/project-index.md",
-        "Extracted 4 module definitions"
-      ]
-    },
-    {
-      "id": "sub-102",
-      "name": "Diagram Builder",
-      "role": "Architecture Visualizer",
-      "status": "running",
-      "progress": 30,
-      "logs": [
-        "Generating mermaid diagram nodes...",
-        "Linking subagent communication channels"
-      ]
+      "type": "TEXT_DELTA",
+      "seq": 3,
+      "agentId": "hermes",
+      "turnId": "turn_001",
+      "delta": "Understood. Delegating documentation indexing to Research and diagram generation to Coding.",
+      "isFinal": true
     }
   ],
   "replayTimeline": [
     {
-      "delayMs": 200,
+      "delayMs": 100,
       "event": {
-        "type": "agent_state",
+        "type": "AGENT_STATE",
+        "seq": 10,
+        "agentId": "hermes",
         "state": "thinking"
       }
     },
     {
-      "delayMs": 400,
+      "delayMs": 250,
       "event": {
-        "type": "subagent_event",
-        "event": "progress",
-        "subagentId": "sub-101",
-        "progress": 100,
-        "status": "completed",
-        "log": "Completed workspace indexing successfully."
+        "type": "AGENT_STATE",
+        "seq": 11,
+        "agentId": "hermes",
+        "state": "delegating"
+      }
+    },
+    {
+      "delayMs": 300,
+      "event": {
+        "type": "TASK_START",
+        "seq": 12,
+        "taskId": "task-501",
+        "fromAgentId": "hermes",
+        "toAgentId": "research",
+        "taskName": "Scan documentation in /docs"
+      }
+    },
+    {
+      "delayMs": 350,
+      "event": {
+        "type": "AGENT_STATE",
+        "seq": 13,
+        "agentId": "research",
+        "state": "executing",
+        "detail": "Reading mobile-web-real-time-multi-agent-voice-interface.md"
       }
     },
     {
       "delayMs": 600,
       "event": {
-        "type": "subagent_event",
-        "event": "spawned",
-        "subagentId": "sub-103",
-        "name": "Summary Writer",
-        "role": "Report Generator",
-        "status": "running",
-        "progress": 10,
-        "log": "Compiling structured notes from sub-101 output..."
+        "type": "TASK_PROGRESS",
+        "seq": 14,
+        "taskId": "task-501",
+        "agentId": "research",
+        "progress": 50,
+        "log": "Parsed 7 of 14 sections"
       }
     },
     {
-      "delayMs": 800,
+      "delayMs": 900,
       "event": {
-        "type": "transcript_chunk",
-        "role": "agent",
-        "chunk": "Subagent Doc Scanner has finished reviewing the docs. Subagent Summary Writer is now compiling the final brief.",
-        "isFinal": true
+        "type": "TASK_COMPLETE",
+        "seq": 15,
+        "taskId": "task-501",
+        "agentId": "research",
+        "resultSummary": "Extracted 14 architectural sections and protocol definitions."
+      }
+    },
+    {
+      "delayMs": 950,
+      "event": {
+        "type": "AGENT_STATE",
+        "seq": 16,
+        "agentId": "research",
+        "state": "idle"
       }
     },
     {
       "delayMs": 1000,
       "event": {
-        "type": "agent_state",
+        "type": "AGENT_STATE",
+        "seq": 17,
+        "agentId": "hermes",
         "state": "speaking"
       }
+    },
+    {
+      "delayMs": 1050,
+      "event": {
+        "type": "TTS_START",
+        "seq": 18,
+        "agentId": "hermes",
+        "turnId": "turn_001"
+      }
+    },
+    {
+      "delayMs": 1100,
+      "event": {
+        "type": "TEXT_DELTA",
+        "seq": 19,
+        "agentId": "hermes",
+        "turnId": "turn_001",
+        "delta": "Research complete. The architecture defines a 4-layer system with orb-based spatial visualization.",
+        "isFinal": true
+      }
+    },
+    {
+      "delayMs": 1500,
+      "event": {
+        "type": "TTS_END",
+        "seq": 20,
+        "agentId": "hermes",
+        "turnId": "turn_001"
+      }
+    },
+    {
+      "delayMs": 1550,
+      "event": {
+        "type": "AGENT_STATE",
+        "seq": 21,
+        "agentId": "hermes",
+        "state": "idle"
+      }
     }
-  ]
+  ],
+  "reconnectScenario": {
+    "description": "Simulate client reconnecting after missing events seq 14-16. Client sends CLIENT_HELLO with lastSeq=13. Hermes replays events 14, 15, 16 then resumes at seq 17.",
+    "clientHello": {
+      "type": "CLIENT_HELLO",
+      "protocolVersion": 1,
+      "sessionId": "mock-session-001",
+      "lastSeq": 13
+    },
+    "replayedEvents": [14, 15, 16]
+  }
 }

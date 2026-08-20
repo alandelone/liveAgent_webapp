@@ -1,0 +1,37 @@
+{
+  "max_visible_subagents": 4,
+  "subagents": [
+    {
+      "id": "coder",
+      "name": "Coder",
+      "profile": "coder",
+      "color": "#3B82F6",
+      "icon": "code",
+      "enabled": true
+    },
+    {
+      "id": "researcher",
+      "name": "Researcher",
+      "profile": "researcher",
+      "color": "#A855F7",
+      "icon": "book-open",
+      "enabled": true
+    },
+    {
+      "id": "qa-tester",
+      "name": "QA Tester",
+      "profile": "qa-tester",
+      "color": "#10B981",
+      "icon": "shield",
+      "enabled": true
+    },
+    {
+      "id": "browser",
+      "name": "Browser",
+      "profile": "browser",
+      "color": "#F59E0B",
+      "icon": "globe",
+      "enabled": true
+    }
+  ]
+}
