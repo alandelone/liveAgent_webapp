@@ -1,49 +1,61 @@
 # Project Context & Invariants
 
 ## Product Identity
-`livechat_agent` is a **Hermes Voice UI** — a mobile-first, real-time voice interface for the Hermes agent runtime. Hermes is the brain; this project is the eyes, ears, and mouth. Full vision in [`docs/product-vision.md`](../docs/product-vision.md). Detailed spec in [`docs/mobile-web-real-time-multi-agent-voice-interface.md`](../docs/mobile-web-real-time-multi-agent-voice-interface.md).
 
-## Architecture: User ↔ Voice/UI ↔ Hermes
+`livechat_agent` is a **local-first real-time voice agent system** with two runtime boundaries: a browser Web UI and a backend Local Runtime Service. The Local Supervisor is the primary orchestrator. Hermes is an optional heavy-reasoning or escalation worker, not the global controller.
+
+Full vision: [`docs/product-vision.md`](../docs/product-vision.md). Target voice design: [`docs/liveagent_voice_pipeline_design.md`](../docs/liveagent_voice_pipeline_design.md). Interaction specification: [`docs/mobile-web-real-time-multi-agent-voice-interface.md`](../docs/mobile-web-real-time-multi-agent-voice-interface.md).
+
+## Architecture: User ↔ Web UI ↔ Local Runtime
+
 ```text
 ┌─────────────────────────────────────────────┐
-│              MOBILE WEB APP                 │  ← This project (Layer 1)
-│  Spatial Voice Room · Active Constellation  │
-│  Gestures · Transcripts · Task Tree        │
+│                BROWSER WEB UI               │
+│ getUserMedia · AEC/NS/AGC · AudioWorklet   │
+│ Spatial Voice Room · Transcript · Summaries │
 └────────────────────┬────────────────────────┘
-                     │ WebSocket (Audio + JSON Events)
-                     │ seq numbers · protocolVersion
+                     │ WebSocket: PCM + public events
                      ▼
 ┌─────────────────────────────────────────────┐
-│           HERMES AGENT RUNTIME              │  ← Layers 2-4
-│  VAD · STT · LLM · TTS · Tools · Agents    │
-└─────────────────────────────────────────────┘
+│            LOCAL RUNTIME SERVICE            │
+│ Silero VAD · Qwen3-ASR · Local Supervisor  │
+│ Scheduler · Policy · Trace · TTS            │
+└───────────────┬───────────────────┬─────────┘
+                │                   │ escalation only
+                ▼                   ▼
+       Specialized worker pool    Hermes
 ```
+
+This is a logical ownership boundary. Native Windows, WSL2, container, and split-process packaging remain deployment decisions until measured in Phase 2.
 
 ## System Invariants (Non-Negotiable)
 
-1. **Hermes is the only agent runtime.**
-   - Frontend never reasons, delegates, executes tools, or manages agent lifecycles.
+1. **The Local Supervisor is the primary orchestrator.**
+   - The Local Runtime owns intent classification, routing, scheduling, task/job state, policy enforcement, cancellation, retries, response coordination, and Hermes escalation.
 
-2. **Frontend never decides delegation.**
-   - Center orb = visual Hermes, not frontend orchestrator. Direct Mode sends `targetAgentId` to Hermes.
+2. **The browser never orchestrates or executes agent work.**
+   - Direct Agent Mode sends a target preference to the Local Runtime. The Supervisor validates and routes it; the browser cannot bypass runtime policy.
 
-3. **Optimistic UI state with Hermes reconciliation.**
-   - Frontend MAY predict state transitions for immediacy (e.g. instant "listening" on mic tap). Hermes events remain source of truth — frontend reconciles when they arrive.
+3. **Local Runtime events are authoritative.**
+   - The UI may predict presentation-only transitions for immediacy, then reconciles with runtime events. It must not infer hidden Supervisor or worker activity.
 
-4. **Barge-in does not cancel background work.**
-   - Voice interruption stops TTS only. Background tasks continue. "Stop speaking" ≠ "Stop task."
+4. **Barge-in and task cancellation are separate semantics.**
+   - `USER_INTERRUPT` stops the current response/TTS turn. `TASK_CANCEL` targets a task and propagates only to cancellable descendants. Background work is not cancelled merely because the user speaks.
 
 5. **Audio never blocks the UI thread.**
-   - AudioWorklet for capture/playback. Throttle high-frequency telemetry to prevent frame drops.
+   - Capture/playback processing belongs off the main thread, with bounded queues and throttled high-frequency telemetry.
 
-6. **Echo cancellation is mandatory.**
-   - Without it, Hermes TTS triggers VAD → infinite self-interruption loop.
+6. **Acoustic echo control is mandatory on the supported voice path.**
+   - Request browser AEC/NS/AGC, verify applied settings, test real devices, and retain push-to-talk/headset fallback. Requested constraints are not assumed effective.
 
-7. **Active constellation, not permanent display.**
-   - Show Hermes + currently active agents. Dormant agents hidden until invoked. No hardcoded agent identities.
+7. **Agent identity is manifest-driven.**
+   - The `isOrchestrator` manifest flag selects the center orb. No production logic may require the orchestrator ID to be `hermes`; Hermes appears only while active as a worker/escalation target.
 
-8. **Task tree is read-only.**
-   - Visualizes Hermes execution. Does not control it.
+8. **The Web UI receives public summaries, not the internal routing graph.**
+   - Internal logs retain canonical trace/job relationships for debugging and performance review. UI task views remain read-only projections.
 
-9. **First-audio latency is the core KPI.**
-   - TTS starts at first sentence boundary. Measure `speech_end → first audible response`.
+9. **First-audio latency is the primary interaction KPI.**
+   - Measure the full `speech_end → first audible response` path and its components; do not infer it from simulated timers or average latency alone.
+
+10. **The first release has no approval workflow.**
+    - Only read-only and explicitly allowlisted local reversible actions may execute. Externally visible, paid, irreversible, or high-impact actions return `BLOCKED_POLICY`. `WAITING_APPROVAL` is deferred.

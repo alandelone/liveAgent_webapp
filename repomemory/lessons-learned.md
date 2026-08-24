@@ -6,4 +6,4 @@
 
 ## Real Voice Pipeline Separation
 - **Issue**: Mock playback traces should remain strictly isolated to offline deterministic tests (`test-fixtures/seed-data.json`).
-- **Correction**: Live runtime must always route actual user voice input to transcription and Hermes LLM execution rather than hardcoded mock turns.
+- **Correction**: Live acceptance must route actual Web App microphone PCM through the selected transcription path and Local Supervisor. Hermes is used only when the Supervisor explicitly escalates. Hardcoded mock turns and simulated playback remain test-only.

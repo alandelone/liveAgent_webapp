@@ -1,20 +1,26 @@
 {
   "project": "livechat_agent",
-  "version": "0.1.0",
-  "description": "Hermes Voice UI — Mobile-First Real-Time Voice Interface for the Hermes Agent Runtime",
+  "version": "0.2.0-planning",
+  "description": "Local-first real-time voice agent interface with Supervisor orchestration, a specialized agent pool, and Hermes escalation",
+  "currentPhase": 2,
+  "releasePolicy": "The first release permits read-only operations and explicitly allowlisted local reversible operations only. Externally visible, paid, irreversible, and high-impact actions must return BLOCKED_POLICY and must not execute.",
   "phases": {
-    "0": "Foundation",
-    "1": "Voice (the actual product)",
-    "2": "Multi-Agent Visuals",
-    "3": "Panels & Layout"
+    "0": "Verified Transport & Replay Baseline",
+    "1": "Verified UI Prototype Baseline",
+    "2": "Architecture, Platform & Evidence",
+    "3": "Real Browser Audio Ingress",
+    "4": "Streaming Speech Recognition",
+    "5": "Supervisor & Agent Pool",
+    "6": "Full-Duplex Voice Response",
+    "7": "Release Validation"
   },
   "features": [
     {
       "id": "FEAT-001",
       "phase": 0,
       "category": "Protocol",
-      "name": "WebSocket Event Bus with Sequencing & Versioning",
-      "description": "Full-duplex WebSocket connection multiplexing binary audio frames and structured JSON event envelopes over a single socket. Every event carries a monotonic `seq` number for gap detection on reconnect. Initial handshake includes `protocolVersion` for compatibility checking. Heartbeat ping/pong for liveness. Validate all incoming events against schema; gracefully ignore unknown event types for forward compatibility.",
+      "name": "WebSocket Event Bus & Binary Transport API",
+      "description": "Implemented WebSocket client/event bus with JSON event schemas, protocolVersion, monotonic server seq tracking, and APIs for binary frame multiplexing. This verifies the transport skeleton; it does not prove that the current microphone sends PCM or that the server consumes audio.",
       "passes": true
     },
     {
@@ -22,96 +28,265 @@
       "phase": 0,
       "category": "Protocol",
       "name": "Connection Resilience & Session Recovery",
-      "description": "Automatic reconnection with exponential backoff on network drops. Preserve sessionId across reconnects. On reconnect, send last-seen `seq` to Hermes so missed events can be replayed. Visible connection-state indicator (connected / reconnecting / offline). Critical for mobile where network drops are constant and silence during disconnect must not be mistaken for Hermes thinking.",
+      "description": "Implemented reconnect backoff, stable sessionId, lastSeq resume requests, heartbeat/liveness handling, and visible connection state. Existing tests verify deterministic client behavior rather than a production Hermes replay service.",
       "passes": true
     },
     {
       "id": "FEAT-003",
       "phase": 0,
-      "category": "Protocol / Dev Infrastructure",
-      "name": "Deterministic Mock Server & JSONL Session Recorder",
-      "description": "Standalone mock WebSocket server that replays test-fixtures/seed-data.json event timelines and synthetic audio chunks for 100% deterministic headless testing (Vitest + Playwright). Additionally, a session recorder that captures real Hermes sessions as timestamped JSONL traces (e.g. session-2026-08-18.jsonl) which can be replayed for UI development without running Hermes. Frontend devs can simulate: Hermes speaking, delegating, agents working/failing, user interrupting, reconnection — all from recorded traces.",
+      "category": "Development Infrastructure",
+      "name": "Deterministic Mock Server & JSONL Session Replay",
+      "description": "Implemented deterministic fixture replay, mock WebSocket events, and JSONL recording/replay utilities for UI development. Recorded traces and fixtures remain the required basis for deterministic CI.",
       "passes": true
     },
     {
       "id": "FEAT-004",
       "phase": 0,
-      "category": "Protocol",
-      "name": "Agent Manifest Consumption & Dynamic Active Constellation",
-      "description": "On connection, receive AGENT_MANIFEST from Hermes defining available agents (id, name, color, icon, isOrchestrator). Dynamically generate the orb constellation from this manifest — no hardcoded agent identities. Support mid-session manifest updates when Hermes creates or retires agents at runtime. Display only Hermes + currently active/relevant agents (active constellation). Dormant agents stay hidden until Hermes invokes them.",
+      "category": "Protocol / UI",
+      "name": "Agent Manifest Consumption & Dynamic Constellation",
+      "description": "Implemented AGENT_MANIFEST consumption, dynamic agent descriptors, active constellation state, and current bridge-side profile discovery. This is a presentation capability, not proof of Supervisor scheduling.",
       "passes": true
     },
     {
       "id": "FEAT-005",
       "phase": 1,
       "category": "State Machine",
-      "name": "Unified Agent State Machine (Hermes-Driven)",
-      "description": "Implement the state machine (IDLE → LISTENING → PROCESSING → SPEAKING → INTERRUPTED/DONE → IDLE) for the Main Hermes agent, plus auxiliary states (DELEGATED, TOOL_CALL, BACKGROUND, COMPLETED) for Side Agents. The frontend MAY optimistically predict state transitions for UI immediacy (e.g. show LISTENING on mic tap before Hermes confirms). Hermes events remain the source of truth — when an AGENT_STATE event arrives, the frontend reconciles to match. States are semantically distinct: thinking ≠ executing ≠ waiting.",
+      "name": "UI Agent State Machine",
+      "description": "Implemented optimistic UI transitions and backend-event reconciliation for listening, thinking, speaking, executing, interruption, completion, and error visuals. It does not implement the new backend job scheduler.",
       "passes": true
     },
     {
       "id": "FEAT-006",
       "phase": 1,
-      "category": "Voice",
-      "name": "Streaming Voice Pipeline with Echo Cancellation & Input Fallbacks",
-      "description": "AudioWorklet-based microphone capture streaming binary audio to Hermes. Chunked TTS audio playback queue that begins playing on the first received audio chunk (not after full response). Audio processing must never block the UI thread. Echo cancellation / self-trigger protection so Hermes TTS output is not detected by VAD as new user speech. Push-to-talk mode as fallback for noisy environments. Text input field as fallback for code snippets, URLs, filenames, and microphone permission failures. Voice-first ≠ voice-only.",
+      "category": "Voice Prototype",
+      "name": "Browser Microphone UI, Web Speech Prototype & Input Fallbacks",
+      "description": "Implemented getUserMedia plus AnalyserNode RMS visualization, browser SpeechRecognition transcription where available, push-to-talk interaction, and text fallback. AudioWorklet PCM uplink, server VAD/ASR, real TTS, and audible streaming playback are explicitly not covered by this completed prototype feature.",
       "passes": true
     },
     {
       "id": "FEAT-007",
       "phase": 1,
-      "category": "Voice",
-      "name": "Barge-in & Interruption Handling",
-      "description": "When VAD detects user speech during Hermes playback: immediately stop TTS audio, send USER_INTERRUPT to Hermes, flush the playback queue, and begin a new listening turn. 'Stop speaking' ≠ 'Stop task': voice interruption never terminates background tasks (TASK_START/PROGRESS/COMPLETE events continue undisturbed). Explicit task cancellation (TASK_CANCEL) is a separate future command.",
+      "category": "Voice Prototype",
+      "name": "Interruption Contract Prototype",
+      "description": "Implemented UI-triggered playback-queue stop and USER_INTERRUPT dispatch while preserving task events. This verifies cancellation semantics against mocks; it does not prove acoustic VAD barge-in or real TTS interruption latency.",
       "passes": true
     },
     {
       "id": "FEAT-008",
       "phase": 1,
       "category": "Spatial UI",
-      "name": "Central Hermes Orb with Audio-Reactive Animation",
-      "description": "Permanently anchored center orb representing Hermes. Visual treatment maps 1:1 to the state machine: Idle (gentle breathing), Listening (ripple waves modulated by mic input amplitude), Processing (pulsing think animation), Speaking (undulations modulated by TTS output amplitude), Executing (gear/progress indicator), Error (red glow + icon). States communicated through animation + icon + label — not color alone (color identifies agent identity, not state). Start simple; defer shader/glow polish until voice works reliably.",
+      "name": "Audio-Reactive Central Orb",
+      "description": "Implemented the central agent orb, state labels/icons, and microphone/TTS-volume-reactive animations using available prototype telemetry.",
       "passes": true
     },
     {
       "id": "FEAT-009",
-      "phase": 2,
+      "phase": 1,
       "category": "Spatial UI",
       "name": "Active Satellite Constellation & Delegation Visuals",
-      "description": "Dynamic constellation of satellite orbs positioned around center Hermes, spawned from the Agent Manifest (FEAT-004). Only currently active/relevant agents shown. Each orb renders its assigned color, icon, label, and state animation using the auxiliary state machine. On delegation (TASK_START from Hermes), an energy beam visually connects Hermes to the target satellite. On completion, beam retracts and satellite returns to idle. Agents that Hermes creates at runtime appear dynamically; agents that go dormant fade out.",
+      "description": "Implemented dynamic satellite orbs and delegation beams driven by manifest and task events. The UI visualizes summaries and does not need the internal Supervisor routing graph.",
       "passes": true
     },
     {
       "id": "FEAT-010",
-      "phase": 2,
+      "phase": 1,
       "category": "Interaction",
-      "name": "Gesture Controls & Mode Switching",
-      "description": "Mobile-native gesture layer: Tap center Hermes orb to toggle listening on/off. Tap a satellite orb to enter Direct Agent Mode (sends targetAgentId to Hermes — frontend does NOT bypass Hermes). Swipe from center toward a satellite as alternative gesture for Direct Mode. Swipe back or tap center to return to Orchestrator Mode. Clearly show which agent currently has audio focus so the user always knows who they're talking to. Voice-based switching ('Talk to Coding') is a Hermes capability, not a frontend feature.",
+      "name": "Gesture Controls & Targeting Intent",
+      "description": "Implemented touch/click mode controls and USER_TARGET intent dispatch. The backend remains responsible for interpreting targeting intent under the active orchestration architecture.",
       "passes": true
     },
     {
       "id": "FEAT-011",
-      "phase": 3,
+      "phase": 1,
       "category": "Layout",
-      "name": "Responsive Layout: Mobile Voice Room → Desktop 3-Pane",
-      "description": "On narrow viewports (mobile): full-screen spatial voice room with bottom-sheet drawers for transcripts and task logs — no heavy sidebars or chat windows on the main screen. On wide viewports (desktop/tablet): 3-pane layout — Left (chat transcripts), Center (voice room), Right (task tree & logs) — with swappable and independently collapsible panels.",
+      "name": "Responsive Mobile & Desktop Layout",
+      "description": "Implemented mobile voice-room drawers and desktop three-pane layout with independently collapsible transcript and task panels.",
       "passes": true
     },
     {
       "id": "FEAT-012",
-      "phase": 3,
+      "phase": 1,
       "category": "Panels",
-      "name": "Streaming Chat Transcript Panel",
-      "description": "Live incremental display of user STT transcriptions and Hermes text deltas with typewriter streaming. Markdown rendering, syntax-highlighted code blocks, and inline tool-call status chips. Artifact attachments from Hermes rendered as structured cards (not buried in transcript text). Scrolls to latest; tap to freeze scroll. Optional on mobile (lives in bottom-sheet drawer).",
+      "name": "Streaming Transcript Panel",
+      "description": "Implemented incremental transcript rendering, text deltas, agent badges, code formatting, artifacts, and scroll behavior against protocol events and fixtures.",
       "passes": true
     },
     {
       "id": "FEAT-013",
-      "phase": 3,
+      "phase": 1,
       "category": "Panels",
-      "name": "Multi-Agent Task Tree & Execution Log Panel (Read-Only)",
-      "description": "Read-only hierarchical tree view of TASK_START / TASK_PROGRESS / TASK_COMPLETE events showing Hermes delegation structure. Live progress indicators, collapsible log streams, and artifact output previews. Users see 'Coding: running tests' rather than raw terminal output; detailed logs live inside expandable sections. This panel visualizes Hermes execution — it does not control it.",
+      "name": "Read-Only Task Tree & Execution Summaries",
+      "description": "Implemented a read-only task tree from TASK_START, TASK_PROGRESS, and TASK_COMPLETE events. Internal jobId, routeId, retry, and worker-attempt traces remain backend observability data by default.",
       "passes": true
+    },
+    {
+      "id": "FEAT-014",
+      "phase": 2,
+      "category": "Architecture Governance",
+      "name": "Supervisor Runtime Boundary & Superseding ADR",
+      "description": "Define the local Qwen Supervisor as the primary orchestrator for routing and agent-pool tracking, define Hermes as an escalation worker, locate each runtime component, and replace contradictory Hermes-only invariants through a superseding ADR and synchronized product/protocol documentation. The versioned migration must derive the orchestrator from AGENT_MANIFEST.isOrchestrator and enumerate all production behavior that hardcodes the hermes identity.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-015",
+      "phase": 2,
+      "category": "Platform",
+      "name": "Supported Linux GPU Runtime Preflight",
+      "description": "Provide a functioning WSL2 Linux distribution or GPU-enabled Linux container on the Windows host, verify Linux-side NVIDIA access, pin compatible runtime versions, and complete a Qwen3-ASR streaming smoke test. Native Windows vLLM and community forks are not assumed supported baselines.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-016",
+      "phase": 2,
+      "category": "Observability",
+      "name": "Canonical Trace Context & Strategic Logging Policy",
+      "description": "Define and propagate traceId, sessionId, turnId, revisionId, taskId, jobId, parentJobId, routeId, agentId, and attempt. Store structured route/job/error/latency records with sampling, redaction, retention, and backpressure policies. The Web UI receives only public task summaries.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-017",
+      "phase": 2,
+      "category": "Test Infrastructure",
+      "name": "Deterministic Voice Corpus & Benchmark Harness",
+      "description": "Create versioned fixed audio and event fixtures with expected VAD boundaries, transcript revisions, route labels, policy blocks, cancellation outcomes, and terminal states. Separate deterministic CI replay from hardware/model benchmarks and record sample-size/confidence methodology.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-018",
+      "phase": 3,
+      "category": "Browser Audio",
+      "name": "AudioWorklet PCM Capture, Resampling & Uplink",
+      "description": "Replace browser SpeechRecognition on the primary path with secure-context getUserMedia capture, applied-setting verification, AudioWorklet processing, measured 16 kHz mono resampling, tunable frame sizing and pre-roll, bounded buffering, and binary WebSocket uplink. Preserve text and push-to-talk fallbacks.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-019",
+      "phase": 3,
+      "category": "Voice Service",
+      "name": "Server PCM Ingestion & Silero VAD",
+      "description": "Consume rather than discard client PCM, maintain per-session audio buffers, run Silero VAD as the authoritative endpoint detector, support onset pre-roll and endpoint grace, and emit measurable speech-boundary events without relying on live microphones in CI.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-020",
+      "phase": 4,
+      "category": "ASR",
+      "name": "Qwen3-ASR 1.7B Streaming Service",
+      "description": "Run the official vLLM streaming path, emit partial/final text, record VAD-derived timing, avoid assuming streaming timestamps or calibrated confidence, expose health/backpressure signals, and prove target-host latency and VRAM behavior.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-021",
+      "phase": 4,
+      "category": "ASR",
+      "name": "Transcript Stabilizer & Chinese-English Glossary",
+      "description": "Maintain stablePrefix, tentativeSuffix, and revisionId; derive stability from hypothesis agreement/churn; preserve commands, paths, names, acronyms, and technical terms; invalidate speculative routes after meaning-changing revisions.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-022",
+      "phase": 5,
+      "category": "Control & Safety",
+      "name": "Deterministic Commands & First-Release BLOCKED_POLICY",
+      "description": "Recognize unambiguous stop-speaking, cancel-task, continue, status, and repeat commands before generative routing. Permit only read-only operations and explicitly allowlisted local reversible operations in the first release; deterministically block externally visible, paid, irreversible, and high-impact actions. No WAITING_APPROVAL state or approval protocol is included.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-023",
+      "phase": 5,
+      "category": "Supervisor",
+      "name": "Structured Local Supervisor Routing",
+      "description": "Serve Qwen3 1.7B as a narrow Supervisor that emits schema-validated route, reasonCode, confidence, riskClass, costBand, deadlineMs, and worker-role decisions. Calibrate confidence and compare BF16/quantized configurations rather than assuming 12 GB co-residency.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-024",
+      "phase": 5,
+      "category": "Orchestration",
+      "name": "Agent Pool Registry, Job Scheduler & Delegation Tracking",
+      "description": "Implement manifest-driven logical worker roles, bounded queues, parent/child jobs, concurrency limits, deadlines, heartbeats, state transitions, and public task summaries. Replace hardcoded hermes behavior in mode, state, manifest, transcript, and constellation paths; select the center orchestrator by isOrchestrator. A role may share a runtime; named roles do not imply one resident model per agent.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-025",
+      "phase": 5,
+      "category": "Escalation",
+      "name": "Hermes Escalation, Budget & Circuit Breaker",
+      "description": "Escalate difficult reasoning or low-confidence cases to Hermes with bounded retry, timeout, cloud budget, circuit-breaker, degraded local response, and trace propagation. Hermes is not assumed available or the default route.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-026",
+      "phase": 5,
+      "category": "Reliability",
+      "name": "Cancellation Isolation, Retry & Idempotency",
+      "description": "Keep USER_INTERRUPT response-scoped and TASK_CANCEL task-scoped; preserve valid background completion events; suppress stale voice responses; propagate explicit cancellation only to cancellable descendants; enforce retry budgets and idempotency keys for side-effect-capable adapters.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-027",
+      "phase": 6,
+      "category": "TTS / Playback",
+      "name": "Real Streaming TTS & Audible Browser Playback",
+      "description": "Select and integrate a measured TTS backend, stream correlated audio chunks, replace simulated playback timing with actual AudioWorklet or equivalent non-blocking output, detect underruns, and fall back to text when synthesis or playback fails.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-028",
+      "phase": 6,
+      "category": "Response",
+      "name": "Response Coordinator & Stale-Result Suppression",
+      "description": "Order worker/Hermes results, stream text at safe sentence/clause boundaries, correlate output with trace/turn/task revisions, suppress cancelled or superseded voice responses, and preserve task status updates independently from speech focus.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-029",
+      "phase": 6,
+      "category": "Full Duplex Voice",
+      "name": "Acoustic Barge-In & Echo Robustness",
+      "description": "Verify actual browser AEC settings, output-reference suppression, VAD behavior during TTS, and push-to-talk degradation. Achieve measured interruption latency without allowing USER_INTERRUPT to cancel background jobs or speaker echo to self-interrupt.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-030",
+      "phase": 7,
+      "category": "Quality Evaluation",
+      "name": "Bilingual ASR, Routing & Policy Evaluation",
+      "description": "Evaluate Mandarin, English, and natural code-switching separately against versioned labels. Measure transcript accuracy/stability, key-term preservation, command correctness, route quality, policy blocking, and worker outcomes with documented scoring rules.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-031",
+      "phase": 7,
+      "category": "Performance Evaluation",
+      "name": "Latency, VRAM, Thermal & Reliability Benchmark",
+      "description": "Measure p50/p95 and statistically qualified p99, first-audio latency, queue wait, cancellation latency, underruns, total-board/per-process VRAM, idle baseline, thermals, cost, and long-run terminal-state reliability on the RTX 4070 Ti host.",
+      "passes": false
+    },
+    {
+      "id": "FEAT-032",
+      "phase": 7,
+      "category": "Operations",
+      "name": "Service Recovery & Release Evidence",
+      "description": "Provide health checks, startup ordering, bounded restarts, failure/status reporting, WSL/container recovery documentation, deterministic test proof, hardware benchmark artifacts, and a final evaluator report before any new feature passes are set true.",
+      "passes": false
+    }
+  ],
+  "deferred": [
+    {
+      "id": "DEFER-001",
+      "name": "User Approval Protocol for Consequential Actions",
+      "reason": "The first release blocks consequential actions instead of executing them. A later release may define approval request/decision events, exact action previews, expiry, revision binding, and WAITING_APPROVAL."
+    },
+    {
+      "id": "DEFER-002",
+      "name": "WebRTC Audio Transport",
+      "reason": "WebSocket remains the baseline until measured latency or network behavior justifies ICE/STUN/TURN complexity."
+    },
+    {
+      "id": "DEFER-003",
+      "name": "Streaming Word-Level ASR Timestamps",
+      "reason": "The official Qwen3-ASR streaming mode does not return timestamps. Optional post-final forced alignment remains outside the first-response hot path."
     }
   ]
 }

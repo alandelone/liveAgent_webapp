@@ -1,10 +1,12 @@
 # Mobile Web Real-Time Multi-Agent Voice Interface
 
+> **Status:** Target interaction specification. Runtime ownership is governed by ADR-008 and [`liveagent_voice_pipeline_design.md`](liveagent_voice_pipeline_design.md). Earlier Hermes-only wording is superseded: the Local Supervisor is the primary orchestrator and Hermes is an optional escalation worker.
+
 ## Core Concept
 
-The core philosophy is not "building a brand-new standalone Agent", but rather:
+The core philosophy is not putting orchestration into the browser, but rather:
 
-> **Treat Hermes / Local Agents as the Backend Agent Runtime, while this project serves as a Mobile-first Real-Time Voice UI + Agent Orchestration Interface.**
+> **Use a mobile-first real-time Voice UI as the presentation and acoustic front end for a backend Local Runtime, where the Local Supervisor routes a specialized worker pool and may escalate difficult work to Hermes.**
 
 ---
 
@@ -32,10 +34,10 @@ The architecture is divided into 4 distinct layers:
 ┌───────────────────────────────────────────┐
 │           REAL-TIME VOICE LAYER           │
 │                                           │
-│ Mic → VAD → STT → Turn Detection         │
+│ PCM → Silero VAD → Qwen3-ASR             │
 │                    │                      │
 │                    ▼                      │
-│               Agent Gateway               │
+│              Local Supervisor             │
 │                    │                      │
 │                    ▼                      │
 │ Streaming Text → TTS → Audio Playback    │
@@ -43,28 +45,24 @@ The architecture is divided into 4 distinct layers:
                         │
                         ▼
 ┌───────────────────────────────────────────┐
-│              AGENT GATEWAY                │
+│          LOCAL RUNTIME CONTROL PLANE      │
 │                                           │
-│             Main Orchestrator             │
+│        Local Supervisor (primary)         │
 │                    │                      │
-│       ┌────────────┼────────────┐         │
-│       ▼            ▼            ▼         │
-│    Agent A       Agent B      Agent C     │
-└───────┬────────────┬────────────┬─────────┘
-        │            │            │
-        ▼            ▼            ▼
-┌──────────┐   ┌──────────┐   ┌──────────┐
-│ Hermes   │   │ Hermes   │   │ Hermes   │
-│ Local    │   │ Local    │   │ Local    │
-│ Agent    │   │ Agent    │   │ Agent    │
-└──────────┘   └──────────┘   └──────────┘
+│       ┌────────────┼───────────────┐      │
+│       ▼            ▼               ▼      │
+│  Local worker  Local worker   Hermes      │
+│   Research       Coding      escalation   │
+└───────────────────────────────────────────┘
 
        User's Own Computer / Local Runtime
 ```
 
+The browser portion of the first layer performs `getUserMedia` capture, requests and verifies AEC/NS/AGC, frames audio in an AudioWorklet, and sends PCM. Silero VAD remains authoritative in the Local Runtime. WebRTC is deferred; WebSocket is the first transport target.
+
 ### Decoupling Principle: Frontend is Backend-Agnostic
 
-**The Frontend should NOT know Hermes's internal logic.**
+**The frontend must not know the Local Supervisor's internal routing graph or Hermes adapter details.**
 
 The Frontend only needs to consume:
 - `Agent ID`
@@ -85,7 +83,7 @@ Example schema:
 }
 ```
 
-This allows swapping Hermes with any backend runtime without rewriting the UI.
+This allows changing local models, worker implementations, or the Hermes adapter without rewriting the UI. The orchestrator is selected from the manifest through `isOrchestrator`; no `hermes` ID may be required by presentation logic.
 
 ---
 
@@ -117,7 +115,7 @@ The UI is modeled as an interactive constellation of orbs / bubbles in a spatial
 
 # 3. Main Orchestrator
 
-The Main Agent is permanently anchored at the center:
+The manifest-selected Local Supervisor is permanently anchored at the center. "Main Agent" below is a visual role, not a browser-side runtime:
 
 ```text
               Side Agent
@@ -244,14 +242,15 @@ Interaction is driven by direct gestures:
 
 ### Mode A — Orchestrator Mode (Default)
 ```text
-User → Main Orchestrator → Main Decides → Side Agent → Result → Main → Voice Response to User
+User → Local Supervisor → Route → Worker/Hermes → Result → Response Coordinator → Voice
 ```
-- The Main Agent autonomously delegates sub-tasks to Side Agents and synthesizes the final voice response. The user communicates purely with the Orchestrator.
+- The Local Supervisor delegates sub-tasks and the Local Runtime coordinates the final response. The user communicates through the orchestrator role.
 
 ### Mode B — Direct Agent Mode
 ```text
-User → Swipe / Select → Side Agent (e.g., Coding Agent) → Direct Conversation (Main Orchestrator bypassed)
+User → Swipe / Select → targetAgentId preference → Local Supervisor validates → Selected worker
 ```
+- Direct Mode changes the requested target; it does not bypass Supervisor routing, deterministic policy, tracing, or task tracking.
 
 ---
 
@@ -284,7 +283,13 @@ Avoid batch execution (`Record → Full STT → Full LLM → Full TTS → Playba
 Microphone
      │
      ▼
-    VAD
+Browser AEC/NS/AGC
+     │
+     ▼
+AudioWorklet PCM
+     │
+     ▼
+Server Silero VAD
      │
      ▼
  Streaming STT
@@ -293,7 +298,7 @@ Microphone
  Partial Text
      │
      ▼
- Agent
+Local Supervisor / Worker
      │
      ▼
  Streaming LLM
@@ -349,13 +354,17 @@ Cancel Current Voice Response
 Communication between Frontend and Gateway is fully event-driven over WebSocket / WebRTC:
 
 ### Core Event Types
+- `CAPTURE_START` / `CAPTURE_END` plus non-replayable binary PCM frames
 - `USER_SPEECH_START` / `USER_SPEECH_END`
 - `STT_PARTIAL` / `STT_FINAL`
 - `AGENT_THINKING` / `AGENT_TOOL_CALL`
 - `AGENT_TEXT_DELTA` / `AGENT_RESPONSE_END`
 - `TTS_START` / `TTS_AUDIO_DELTA` / `TTS_END`
 - `USER_INTERRUPT`
-- `TASK_START` / `TASK_PROGRESS` / `TASK_COMPLETE`
+- `TASK_START` / `TASK_PROGRESS` / `TASK_COMPLETE` / `TASK_CANCEL`
+- A public task-state event for deterministic `BLOCKED_POLICY`
+
+`USER_INTERRUPT` is response-scoped; `TASK_CANCEL` is task-scoped. Internal route/job identifiers and full traces remain backend-only. Exact v0.2 event names and version negotiation are frozen in the protocol design gate, not inferred from this interaction document.
 
 ---
 
@@ -458,7 +467,8 @@ Users instantly identify which agent is responding purely through audio cues.
      AGENT EVENT BUS
             │
             ▼
-      HERMES / LOCAL
+       LOCAL RUNTIME
+  Supervisor · Workers · Hermes
 ```
 
 The **Realtime Voice Bus** and **Agent Event Bus** form the backbone of the system, enabling low-latency streaming, instant barge-in interruptibility, and concurrent execution of background agent tasks.

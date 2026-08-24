@@ -54,3 +54,11 @@
   - Created `subagents.config.json` allowing user-configured visibility limits (`max_visible_subagents`) and custom theme overrides.
   - Added `npm run server` script to `package.json`.
   - Verified 100% test pass rate (41/41 tests across 15 test suites) and 0 TypeScript errors.
+- **2026-08-25 00:07**: Replanned v0.2 Voice/Supervisor Upgrade:
+  - Corrected FEAT-006 and FEAT-007 to describe the verified Web Speech/UI interruption prototype rather than unimplemented PCM/VAD/TTS behavior.
+  - Preserved FEAT-001 through FEAT-013 as the verified baseline and added FEAT-014 through FEAT-032 as unverified dependency-ordered work.
+  - Deferred the approval protocol; first release now blocks externally visible, paid, irreversible, and high-impact actions through deterministic `BLOCKED_POLICY` enforcement.
+  - Accepted the Local Supervisor as the primary orchestrator and Hermes as an escalation worker; added superseding ADR-008/ADR-009 and synchronized product vision, project context, interaction, and protocol documentation.
+  - Split the protocol document into an honest implemented-v1 baseline and v0.2 target requirements; recorded server-authoritative VAD, manifest-driven orchestrator identity, non-replayable audio, and legacy hardcoded `hermes` IDs as migration work.
+  - Reset mission status to Phase 2 Discovery for architecture governance, supported Linux GPU runtime, strategic tracing/logging, and deterministic voice evidence.
+  - Archived the old verification scope, rewrote all active stage gates, and verified the baseline still passes 41/41 tests with 0 TypeScript errors.

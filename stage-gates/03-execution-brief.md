@@ -1,18 +1,15 @@
-# 03 - Execution Brief: Phase 3 Panels & Layout
- 
-## Work Breakdown & Tasks
-- [ ] Task 1 (FEAT-012): Implement `src/state/transcriptStore.ts` tracking user turns, partial/final STT, streaming text deltas, artifacts, errors, and unread badges.
-- [ ] Task 2 (FEAT-013): Implement `src/state/taskTreeStore.ts` maintaining hierarchical task trees, progress levels, logs, and completion summaries from Hermes events.
-- [ ] Task 3 (FEAT-011): Implement `src/state/layoutStore.ts` for managing viewport breakpoints (mobile vs desktop 3-pane) and drawer states.
-- [ ] Task 4 (FEAT-012): Implement `src/components/panels/TranscriptPanel.tsx` with streaming typewriter text, markdown/code chips, artifact attachments, and scroll lock.
-- [ ] Task 5 (FEAT-013): Implement `src/components/panels/TaskTreePanel.tsx` with collapsible task branches, progress indicators, execution logs, and output summaries.
-- [ ] Task 6 (FEAT-011): Implement `src/components/panels/MobileDrawer.tsx` and integrate 3-pane desktop vs mobile drawers into `src/App.tsx`.
-- [ ] Task 7: Write Vitest unit and integration test suites for transcriptStore, taskTreeStore, layoutStore, TranscriptPanel, and TaskTreePanel.
+# 03 - Execution Brief: Phase 2 Architecture, Platform & Evidence
 
-## Definition of Done (DoD)
-- On desktop viewports (≥1024px), 3-pane layout displays left transcript, center constellation, right task tree with independent collapse/expand buttons.
-- On mobile viewports (<1024px), full-screen spatial voice room is maintained with toggleable bottom drawers.
-- Zero TypeScript compiler or lint errors (`npm test` and `npm run lint`).
+**Status:** Pending 02-technical-design acceptance
+**Target features:** FEAT-014 through FEAT-017
 
+No generator tasks are authorized yet. The task breakdown and Definition of Done will be produced from the accepted `02-tech-design.md`; this prevents implementation from racing ahead of unresolved runtime, observability, and benchmark choices.
 
+## Required execution-brief contents
 
+- [ ] File/module-level work breakdown mapped to one or more feature IDs.
+- [ ] Safe environment repair/setup commands with rollback notes.
+- [ ] Deterministic unit/integration tests and fixed fixtures.
+- [ ] Separate target-hardware smoke/benchmark commands.
+- [ ] Exact evidence artifacts required before each `passes` field can change.
+- [ ] Lint, test, build, privacy, and resource-usage Definition of Done.

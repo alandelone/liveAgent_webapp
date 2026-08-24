@@ -1,8 +1,9 @@
 {
-  "stage": "04-verification",
-  "active_agent_role": "Evaluator",
-  "current_gate": "04-verification-report.md",
+  "stage": "01-discovery",
+  "active_agent_role": "Planner",
+  "current_gate": "01-discovery-brief.md",
   "active_skills": [],
-  "status": "completed",
-  "updated_at": "2026-08-18T21:49:30Z"
+  "status": "in_progress",
+  "target_features": ["FEAT-014", "FEAT-015", "FEAT-016", "FEAT-017"],
+  "updated_at": "2026-08-25T00:06:11+08:00"
 }
