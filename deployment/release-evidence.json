@@ -1,0 +1,947 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-25T13:37:59Z",
+  "status": "pass",
+  "corpus": {
+    "backend": "kokoro-loopback",
+    "model": "hexgrad/Kokoro-82M-v1.1-zh",
+    "revision": "01e7505bd6a7a2ac4975463114c3a7650a9f7218",
+    "limitation": "fixed selected-TTS regression speech; not population-level human accuracy"
+  },
+  "asr": {
+    "groups": {
+      "zh": {
+        "cases": 4,
+        "edits": 0,
+        "referenceUnits": 22,
+        "errorRate": 0.0,
+        "keyTermAccuracy": 1.0,
+        "commandAccuracy": 1.0,
+        "routeAccuracy": 1.0,
+        "terminalAccuracy": 1.0,
+        "emptyFinals": 0
+      },
+      "en": {
+        "cases": 4,
+        "edits": 0,
+        "referenceUnits": 15,
+        "errorRate": 0.0,
+        "keyTermAccuracy": 1.0,
+        "commandAccuracy": 1.0,
+        "routeAccuracy": 1.0,
+        "terminalAccuracy": 1.0,
+        "emptyFinals": 0
+      },
+      "code-switch": {
+        "cases": 4,
+        "edits": 2,
+        "referenceUnits": 23,
+        "errorRate": 0.08695652173913043,
+        "keyTermAccuracy": 1.0,
+        "commandAccuracy": 1.0,
+        "routeAccuracy": 1.0,
+        "terminalAccuracy": 1.0,
+        "emptyFinals": 0
+      }
+    },
+    "overall": {
+      "cases": 12,
+      "edits": 2,
+      "referenceUnits": 60,
+      "errorRate": 0.03333333333333333,
+      "keyTermAccuracy": 1.0,
+      "commandAccuracy": 1.0,
+      "routeAccuracy": 1.0,
+      "terminalAccuracy": 1.0,
+      "emptyFinals": 0
+    }
+  },
+  "thresholds": {
+    "passes": true,
+    "checks": {
+      "zhCer": true,
+      "enWer": true,
+      "codeSwitchMer": true,
+      "overallKeyTerms": true,
+      "groupKeyTerms": true,
+      "commands": true,
+      "routes": true,
+      "terminals": true,
+      "nonEmptyFinals": true
+    }
+  },
+  "latency": {
+    "sampleCount": 10,
+    "p50Ms": 2604.404,
+    "p95Ms": 2963.833,
+    "median95Ms": [
+      2473.002,
+      2730.803
+    ],
+    "p99Ms": null,
+    "p99Qualified": false
+  },
+  "latencyPass": true,
+  "fixtures": {
+    "routes": [
+      {
+        "id": "route-zh-01",
+        "expected": "research",
+        "actual": "research",
+        "passes": true
+      },
+      {
+        "id": "route-zh-02",
+        "expected": "coding",
+        "actual": "coding",
+        "passes": true
+      },
+      {
+        "id": "route-zh-03",
+        "expected": "browser",
+        "actual": "browser",
+        "passes": true
+      },
+      {
+        "id": "route-zh-04",
+        "expected": "command",
+        "actual": "command",
+        "passes": true
+      },
+      {
+        "id": "route-zh-05",
+        "expected": "command",
+        "actual": "command",
+        "passes": true
+      },
+      {
+        "id": "route-zh-06",
+        "expected": "research",
+        "actual": "research",
+        "passes": true
+      },
+      {
+        "id": "route-zh-07",
+        "expected": "coding",
+        "actual": "coding",
+        "passes": true
+      },
+      {
+        "id": "route-zh-08",
+        "expected": "filesystem_read",
+        "actual": "filesystem_read",
+        "passes": true
+      },
+      {
+        "id": "route-en-01",
+        "expected": "research",
+        "actual": "research",
+        "passes": true
+      },
+      {
+        "id": "route-en-02",
+        "expected": "coding",
+        "actual": "coding",
+        "passes": true
+      },
+      {
+        "id": "route-en-03",
+        "expected": "browser",
+        "actual": "browser",
+        "passes": true
+      },
+      {
+        "id": "route-en-04",
+        "expected": "command",
+        "actual": "command",
+        "passes": true
+      },
+      {
+        "id": "route-en-05",
+        "expected": "command",
+        "actual": "command",
+        "passes": true
+      },
+      {
+        "id": "route-en-06",
+        "expected": "research",
+        "actual": "research",
+        "passes": true
+      },
+      {
+        "id": "route-en-07",
+        "expected": "coding",
+        "actual": "coding",
+        "passes": true
+      },
+      {
+        "id": "route-en-08",
+        "expected": "filesystem_read",
+        "actual": "filesystem_read",
+        "passes": true
+      },
+      {
+        "id": "route-code-switch-01",
+        "expected": "research",
+        "actual": "research",
+        "passes": true
+      },
+      {
+        "id": "route-code-switch-02",
+        "expected": "coding",
+        "actual": "coding",
+        "passes": true
+      },
+      {
+        "id": "route-code-switch-03",
+        "expected": "browser",
+        "actual": "browser",
+        "passes": true
+      },
+      {
+        "id": "route-code-switch-04",
+        "expected": "command",
+        "actual": "command",
+        "passes": true
+      },
+      {
+        "id": "route-code-switch-05",
+        "expected": "command",
+        "actual": "command",
+        "passes": true
+      },
+      {
+        "id": "route-code-switch-06",
+        "expected": "research",
+        "actual": "research",
+        "passes": true
+      },
+      {
+        "id": "route-code-switch-07",
+        "expected": "coding",
+        "actual": "coding",
+        "passes": true
+      },
+      {
+        "id": "route-code-switch-08",
+        "expected": "filesystem_read",
+        "actual": "filesystem_read",
+        "passes": true
+      }
+    ],
+    "policies": [
+      {
+        "id": "policy-read-docs",
+        "expected": "ALLOW_READ_ONLY",
+        "actual": "ALLOW_READ_ONLY",
+        "passes": true
+      },
+      {
+        "id": "policy-list-files",
+        "expected": "ALLOW_READ_ONLY",
+        "actual": "ALLOW_READ_ONLY",
+        "passes": true
+      },
+      {
+        "id": "policy-local-format",
+        "expected": "ALLOW_LOCAL_REVERSIBLE",
+        "actual": "ALLOW_LOCAL_REVERSIBLE",
+        "passes": true
+      },
+      {
+        "id": "policy-run-tests",
+        "expected": "ALLOW_LOCAL_REVERSIBLE",
+        "actual": "ALLOW_LOCAL_REVERSIBLE",
+        "passes": true
+      },
+      {
+        "id": "policy-send-email",
+        "expected": "BLOCKED_POLICY",
+        "actual": "BLOCKED_POLICY",
+        "passes": true
+      },
+      {
+        "id": "policy-publish-post",
+        "expected": "BLOCKED_POLICY",
+        "actual": "BLOCKED_POLICY",
+        "passes": true
+      },
+      {
+        "id": "policy-buy-item",
+        "expected": "BLOCKED_POLICY",
+        "actual": "BLOCKED_POLICY",
+        "passes": true
+      },
+      {
+        "id": "policy-delete-home",
+        "expected": "BLOCKED_POLICY",
+        "actual": "BLOCKED_POLICY",
+        "passes": true
+      },
+      {
+        "id": "policy-transfer-money",
+        "expected": "BLOCKED_POLICY",
+        "actual": "BLOCKED_POLICY",
+        "passes": true
+      },
+      {
+        "id": "policy-deploy-public",
+        "expected": "BLOCKED_POLICY",
+        "actual": "BLOCKED_POLICY",
+        "passes": true
+      },
+      {
+        "id": "policy-change-security",
+        "expected": "BLOCKED_POLICY",
+        "actual": "BLOCKED_POLICY",
+        "passes": true
+      },
+      {
+        "id": "policy-unknown-side-effect",
+        "expected": "BLOCKED_POLICY",
+        "actual": "BLOCKED_POLICY",
+        "passes": true
+      }
+    ],
+    "routesPass": true,
+    "policiesPass": true
+  },
+  "deterministicSoak": {
+    "turns": 100,
+    "legalTerminals": 100,
+    "passes": true
+  },
+  "productionTerminals": {
+    "voiceTurns": 12,
+    "text": {
+      "turns": 8,
+      "legalTerminals": 8,
+      "passes": true,
+      "results": [
+        {
+          "turnId": "release-text-0",
+          "text": "听我说",
+          "legalTerminal": true,
+          "eventTypes": [
+            "STT_FINAL",
+            "COMMAND_ACK"
+          ]
+        },
+        {
+          "turnId": "release-text-1",
+          "text": "Stop speaking",
+          "legalTerminal": true,
+          "eventTypes": [
+            "STT_FINAL",
+            "COMMAND_ACK"
+          ]
+        },
+        {
+          "turnId": "release-text-2",
+          "text": "status",
+          "legalTerminal": true,
+          "eventTypes": [
+            "STT_FINAL",
+            "TEXT_DELTA",
+            "AGENT_STATE",
+            "TTS_START",
+            "TTS_END",
+            "AGENT_STATE"
+          ]
+        },
+        {
+          "turnId": "release-text-3",
+          "text": "Tell me the current status",
+          "legalTerminal": true,
+          "eventTypes": [
+            "STT_FINAL",
+            "TEXT_DELTA",
+            "AGENT_STATE",
+            "TTS_START",
+            "TTS_END",
+            "AGENT_STATE"
+          ]
+        },
+        {
+          "turnId": "release-text-4",
+          "text": "continue",
+          "legalTerminal": true,
+          "eventTypes": [
+            "STT_FINAL",
+            "TEXT_DELTA",
+            "AGENT_STATE",
+            "TTS_START",
+            "TTS_END",
+            "AGENT_STATE"
+          ]
+        },
+        {
+          "turnId": "release-text-5",
+          "text": "repeat",
+          "legalTerminal": true,
+          "eventTypes": [
+            "STT_FINAL",
+            "TEXT_DELTA",
+            "AGENT_STATE",
+            "TTS_START",
+            "TTS_END",
+            "AGENT_STATE"
+          ]
+        },
+        {
+          "turnId": "release-text-6",
+          "text": "Review the architecture docs",
+          "legalTerminal": true,
+          "eventTypes": [
+            "STT_FINAL",
+            "AGENT_STATE",
+            "TASK_START",
+            "TASK_STATE",
+            "TASK_COMPLETE",
+            "TEXT_DELTA",
+            "AGENT_STATE",
+            "TTS_START",
+            "TTS_END",
+            "AGENT_STATE"
+          ]
+        },
+        {
+          "turnId": "release-text-7",
+          "text": "Fix the TypeScript error",
+          "legalTerminal": true,
+          "eventTypes": [
+            "STT_FINAL",
+            "AGENT_STATE",
+            "TASK_START",
+            "TASK_STATE",
+            "TASK_COMPLETE",
+            "TEXT_DELTA",
+            "AGENT_STATE",
+            "TTS_START",
+            "TTS_END",
+            "AGENT_STATE"
+          ]
+        }
+      ]
+    },
+    "passes": true
+  },
+  "gpu": {
+    "before": {
+      "memoryUsedMiB": 6009,
+      "memoryFreeMiB": 5986,
+      "temperatureC": 50,
+      "powerW": 10.97,
+      "computePids": [
+        "10744",
+        "13728",
+        "13752",
+        "14344",
+        "16076",
+        "16716",
+        "17552",
+        "18368",
+        "18920",
+        "19248",
+        "20996",
+        "21056",
+        "22568",
+        "2368",
+        "24156",
+        "24376",
+        "24484",
+        "24532",
+        "24964",
+        "25588",
+        "30364",
+        "30404",
+        "32384",
+        "33864",
+        "4",
+        "9456",
+        "9664"
+      ],
+      "asrEnginePids": [
+        "379"
+      ]
+    },
+    "after": {
+      "memoryUsedMiB": 6097,
+      "memoryFreeMiB": 5898,
+      "temperatureC": 47,
+      "powerW": 7.89,
+      "computePids": [
+        "10744",
+        "13728",
+        "13752",
+        "14344",
+        "16076",
+        "16716",
+        "17552",
+        "18368",
+        "18920",
+        "19248",
+        "20996",
+        "21056",
+        "22568",
+        "2368",
+        "24156",
+        "24376",
+        "24484",
+        "24532",
+        "24964",
+        "25588",
+        "30364",
+        "30404",
+        "32384",
+        "33864",
+        "4",
+        "9456",
+        "9664"
+      ],
+      "asrEnginePids": [
+        "379"
+      ]
+    },
+    "passes": true
+  },
+  "cases": [
+    {
+      "score": {
+        "case_id": "asr-zh-command",
+        "language": "zh",
+        "reference": "听我说",
+        "hypothesis": "听我说。",
+        "edits": 0,
+        "reference_units": 3,
+        "error_rate": 0.0,
+        "key_terms_found": 1,
+        "key_terms_total": 1,
+        "command_correct": true,
+        "route_correct": true,
+        "terminal_correct": true,
+        "empty_final": false
+      },
+      "eventTypes": [
+        "AGENT_MANIFEST",
+        "AGENT_STATE",
+        "USER_SPEECH_START",
+        "STT_PARTIAL",
+        "USER_SPEECH_END",
+        "STT_FINAL",
+        "COMMAND_ACK"
+      ],
+      "binaryChunks": 0,
+      "firstAudioMs": null,
+      "elapsedMs": 2532.0,
+      "errors": []
+    },
+    {
+      "score": {
+        "case_id": "asr-zh-status",
+        "language": "zh",
+        "reference": "告诉我当前状态",
+        "hypothesis": "告诉我当前状态。",
+        "edits": 0,
+        "reference_units": 7,
+        "error_rate": 0.0,
+        "key_terms_found": 1,
+        "key_terms_total": 1,
+        "command_correct": true,
+        "route_correct": true,
+        "terminal_correct": true,
+        "empty_final": false
+      },
+      "eventTypes": [
+        "AGENT_MANIFEST",
+        "AGENT_STATE",
+        "USER_SPEECH_START",
+        "STT_PARTIAL",
+        "STT_PARTIAL",
+        "USER_SPEECH_END",
+        "STT_FINAL",
+        "TEXT_DELTA",
+        "AGENT_STATE",
+        "TTS_START",
+        "TTS_END",
+        "AGENT_STATE"
+      ],
+      "binaryChunks": 52,
+      "firstAudioMs": 2963.833,
+      "elapsedMs": 11140.0,
+      "errors": []
+    },
+    {
+      "score": {
+        "case_id": "asr-zh-research",
+        "language": "zh",
+        "reference": "查看项目文档",
+        "hypothesis": "查看项目文档。",
+        "edits": 0,
+        "reference_units": 6,
+        "error_rate": 0.0,
+        "key_terms_found": 1,
+        "key_terms_total": 1,
+        "command_correct": null,
+        "route_correct": true,
+        "terminal_correct": true,
+        "empty_final": false
+      },
+      "eventTypes": [
+        "AGENT_MANIFEST",
+        "AGENT_STATE",
+        "USER_SPEECH_START",
+        "STT_PARTIAL",
+        "STT_PARTIAL",
+        "USER_SPEECH_END",
+        "STT_FINAL",
+        "AGENT_STATE",
+        "TASK_START",
+        "TASK_STATE",
+        "TASK_COMPLETE",
+        "TEXT_DELTA",
+        "AGENT_STATE",
+        "TTS_START",
+        "TTS_END",
+        "AGENT_STATE"
+      ],
+      "binaryChunks": 35,
+      "firstAudioMs": 2473.002,
+      "elapsedMs": 8828.0,
+      "errors": []
+    },
+    {
+      "score": {
+        "case_id": "asr-zh-coding",
+        "language": "zh",
+        "reference": "修复类型错误",
+        "hypothesis": "修复类型错误。",
+        "edits": 0,
+        "reference_units": 6,
+        "error_rate": 0.0,
+        "key_terms_found": 1,
+        "key_terms_total": 1,
+        "command_correct": null,
+        "route_correct": true,
+        "terminal_correct": true,
+        "empty_final": false
+      },
+      "eventTypes": [
+        "AGENT_MANIFEST",
+        "AGENT_STATE",
+        "USER_SPEECH_START",
+        "STT_PARTIAL",
+        "STT_PARTIAL",
+        "USER_SPEECH_END",
+        "STT_FINAL",
+        "AGENT_STATE",
+        "TASK_START",
+        "TASK_STATE",
+        "TASK_COMPLETE",
+        "TEXT_DELTA",
+        "AGENT_STATE",
+        "TTS_START",
+        "TTS_END",
+        "AGENT_STATE"
+      ],
+      "binaryChunks": 39,
+      "firstAudioMs": 2730.803,
+      "elapsedMs": 9500.0,
+      "errors": []
+    },
+    {
+      "score": {
+        "case_id": "asr-en-command",
+        "language": "en",
+        "reference": "Stop speaking",
+        "hypothesis": "Stop speaking.",
+        "edits": 0,
+        "reference_units": 2,
+        "error_rate": 0.0,
+        "key_terms_found": 1,
+        "key_terms_total": 1,
+        "command_correct": true,
+        "route_correct": true,
+        "terminal_correct": true,
+        "empty_final": false
+      },
+      "eventTypes": [
+        "AGENT_MANIFEST",
+        "AGENT_STATE",
+        "USER_SPEECH_START",
+        "STT_PARTIAL",
+        "USER_SPEECH_END",
+        "STT_FINAL",
+        "COMMAND_ACK"
+      ],
+      "binaryChunks": 0,
+      "firstAudioMs": null,
+      "elapsedMs": 3797.0,
+      "errors": []
+    },
+    {
+      "score": {
+        "case_id": "asr-en-status",
+        "language": "en",
+        "reference": "Tell me the current status",
+        "hypothesis": "Tell me the current status.",
+        "edits": 0,
+        "reference_units": 5,
+        "error_rate": 0.0,
+        "key_terms_found": 1,
+        "key_terms_total": 1,
+        "command_correct": true,
+        "route_correct": true,
+        "terminal_correct": true,
+        "empty_final": false
+      },
+      "eventTypes": [
+        "AGENT_MANIFEST",
+        "AGENT_STATE",
+        "USER_SPEECH_START",
+        "STT_PARTIAL",
+        "STT_PARTIAL",
+        "USER_SPEECH_END",
+        "STT_FINAL",
+        "TEXT_DELTA",
+        "AGENT_STATE",
+        "TTS_START",
+        "TTS_END",
+        "AGENT_STATE"
+      ],
+      "binaryChunks": 52,
+      "firstAudioMs": 2575.926,
+      "elapsedMs": 10563.0,
+      "errors": []
+    },
+    {
+      "score": {
+        "case_id": "asr-en-research",
+        "language": "en",
+        "reference": "Review the architecture docs",
+        "hypothesis": "Review the architecture docs.",
+        "edits": 0,
+        "reference_units": 4,
+        "error_rate": 0.0,
+        "key_terms_found": 1,
+        "key_terms_total": 1,
+        "command_correct": null,
+        "route_correct": true,
+        "terminal_correct": true,
+        "empty_final": false
+      },
+      "eventTypes": [
+        "AGENT_MANIFEST",
+        "AGENT_STATE",
+        "USER_SPEECH_START",
+        "STT_PARTIAL",
+        "STT_PARTIAL",
+        "USER_SPEECH_END",
+        "STT_FINAL",
+        "AGENT_STATE",
+        "TASK_START",
+        "TASK_STATE",
+        "TASK_COMPLETE",
+        "TEXT_DELTA",
+        "AGENT_STATE",
+        "TTS_START",
+        "TTS_END",
+        "AGENT_STATE"
+      ],
+      "binaryChunks": 35,
+      "firstAudioMs": 2704.726,
+      "elapsedMs": 9500.0,
+      "errors": []
+    },
+    {
+      "score": {
+        "case_id": "asr-en-coding",
+        "language": "en",
+        "reference": "Fix the TypeScript error",
+        "hypothesis": "Fix the TypeScript error.",
+        "edits": 0,
+        "reference_units": 4,
+        "error_rate": 0.0,
+        "key_terms_found": 1,
+        "key_terms_total": 1,
+        "command_correct": null,
+        "route_correct": true,
+        "terminal_correct": true,
+        "empty_final": false
+      },
+      "eventTypes": [
+        "AGENT_MANIFEST",
+        "AGENT_STATE",
+        "USER_SPEECH_START",
+        "STT_PARTIAL",
+        "USER_SPEECH_END",
+        "STT_FINAL",
+        "AGENT_STATE",
+        "TASK_START",
+        "TASK_STATE",
+        "TASK_COMPLETE",
+        "TEXT_DELTA",
+        "AGENT_STATE",
+        "TTS_START",
+        "TTS_END",
+        "AGENT_STATE"
+      ],
+      "binaryChunks": 39,
+      "firstAudioMs": 2852.034,
+      "elapsedMs": 9500.0,
+      "errors": []
+    },
+    {
+      "score": {
+        "case_id": "asr-mix-research",
+        "language": "code-switch",
+        "reference": "帮我 review the API docs",
+        "hypothesis": "Help me review the API docs.",
+        "edits": 2,
+        "reference_units": 6,
+        "error_rate": 0.3333333333333333,
+        "key_terms_found": 2,
+        "key_terms_total": 2,
+        "command_correct": null,
+        "route_correct": true,
+        "terminal_correct": true,
+        "empty_final": false
+      },
+      "eventTypes": [
+        "AGENT_MANIFEST",
+        "AGENT_STATE",
+        "USER_SPEECH_START",
+        "STT_PARTIAL",
+        "STT_PARTIAL",
+        "USER_SPEECH_END",
+        "STT_FINAL",
+        "AGENT_STATE",
+        "TASK_START",
+        "TASK_STATE",
+        "TASK_COMPLETE",
+        "TEXT_DELTA",
+        "AGENT_STATE",
+        "TTS_START",
+        "TTS_END",
+        "AGENT_STATE"
+      ],
+      "binaryChunks": 35,
+      "firstAudioMs": 2623.782,
+      "elapsedMs": 9703.0,
+      "errors": []
+    },
+    {
+      "score": {
+        "case_id": "asr-mix-coding",
+        "language": "code-switch",
+        "reference": "把这个 TypeScript bug fix 掉",
+        "hypothesis": "把这个 TypeScript bug  fix 掉。",
+        "edits": 0,
+        "reference_units": 7,
+        "error_rate": 0.0,
+        "key_terms_found": 3,
+        "key_terms_total": 3,
+        "command_correct": null,
+        "route_correct": true,
+        "terminal_correct": true,
+        "empty_final": false
+      },
+      "eventTypes": [
+        "AGENT_MANIFEST",
+        "AGENT_STATE",
+        "USER_SPEECH_START",
+        "STT_PARTIAL",
+        "STT_PARTIAL",
+        "USER_SPEECH_END",
+        "STT_FINAL",
+        "AGENT_STATE",
+        "TASK_START",
+        "TASK_STATE",
+        "TASK_COMPLETE",
+        "TEXT_DELTA",
+        "AGENT_STATE",
+        "TTS_START",
+        "TTS_END",
+        "AGENT_STATE"
+      ],
+      "binaryChunks": 39,
+      "firstAudioMs": 2585.026,
+      "elapsedMs": 10484.0,
+      "errors": []
+    },
+    {
+      "score": {
+        "case_id": "asr-mix-browser",
+        "language": "code-switch",
+        "reference": "open 一下 localhost dashboard",
+        "hypothesis": "Open一下 localhost dashboard.",
+        "edits": 0,
+        "reference_units": 5,
+        "error_rate": 0.0,
+        "key_terms_found": 2,
+        "key_terms_total": 2,
+        "command_correct": null,
+        "route_correct": true,
+        "terminal_correct": true,
+        "empty_final": false
+      },
+      "eventTypes": [
+        "AGENT_MANIFEST",
+        "AGENT_STATE",
+        "USER_SPEECH_START",
+        "STT_PARTIAL",
+        "STT_PARTIAL",
+        "USER_SPEECH_END",
+        "STT_FINAL",
+        "AGENT_STATE",
+        "TASK_START",
+        "TASK_STATE",
+        "TASK_COMPLETE",
+        "TEXT_DELTA",
+        "AGENT_STATE",
+        "TTS_START",
+        "TTS_END",
+        "AGENT_STATE"
+      ],
+      "binaryChunks": 34,
+      "firstAudioMs": 1983.362,
+      "elapsedMs": 9016.0,
+      "errors": []
+    },
+    {
+      "score": {
+        "case_id": "asr-mix-status",
+        "language": "code-switch",
+        "reference": "告诉我 current status",
+        "hypothesis": "告诉我 current status.",
+        "edits": 0,
+        "reference_units": 5,
+        "error_rate": 0.0,
+        "key_terms_found": 1,
+        "key_terms_total": 1,
+        "command_correct": true,
+        "route_correct": true,
+        "terminal_correct": true,
+        "empty_final": false
+      },
+      "eventTypes": [
+        "AGENT_MANIFEST",
+        "AGENT_STATE",
+        "USER_SPEECH_START",
+        "STT_PARTIAL",
+        "STT_PARTIAL",
+        "USER_SPEECH_END",
+        "STT_FINAL",
+        "TEXT_DELTA",
+        "AGENT_STATE",
+        "TTS_START",
+        "TTS_END",
+        "AGENT_STATE"
+      ],
+      "binaryChunks": 52,
+      "firstAudioMs": 2277.529,
+      "elapsedMs": 10453.0,
+      "errors": []
+    }
+  ]
+}

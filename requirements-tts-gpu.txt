@@ -1,0 +1,6 @@
+kokoro==0.9.4
+misaki[zh]==0.9.4
+soundfile==0.13.1
+huggingface-hub==0.36.0
+https://download-r2.pytorch.org/whl/cu130/torch-2.13.0%2Bcu130-cp312-cp312-win_amd64.whl#sha256=2efab1e83604ca628c6d85b9e188c153690980498d1297081a9dad704919303c
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl

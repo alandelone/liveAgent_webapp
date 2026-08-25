@@ -5,11 +5,13 @@ import { AudioPlaybackQueue } from './audioPlaybackQueue';
 export interface BargeInMetrics {
   totalInterruptions: number;
   lastInterruptionTimestamp: number | null;
+  lastLocalStopLatencyMs: number | null;
 }
 
 export class BargeInManager {
   private totalInterruptions = 0;
   private lastInterruptionTimestamp: number | null = null;
+  private lastLocalStopLatencyMs: number | null = null;
   private onInterruptionListeners: Set<() => void> = new Set();
 
   constructor(
@@ -23,9 +25,11 @@ export class BargeInManager {
    */
   public triggerInterruption(): void {
     const snap = this.stateMachine.getSnapshot();
+    const stopStarted = globalThis.performance?.now() ?? Date.now();
 
     // 1. Immediately stop TTS audio playback queue
     this.playbackQueue.stop();
+    this.lastLocalStopLatencyMs = (globalThis.performance?.now() ?? Date.now()) - stopStarted;
 
     // 2. Send USER_INTERRUPT to Hermes
     this.client.sendEvent({
@@ -54,6 +58,7 @@ export class BargeInManager {
     return {
       totalInterruptions: this.totalInterruptions,
       lastInterruptionTimestamp: this.lastInterruptionTimestamp,
+      lastLocalStopLatencyMs: this.lastLocalStopLatencyMs,
     };
   }
 

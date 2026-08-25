@@ -2,8 +2,8 @@ import {
   HermesClientEvent,
   ConnectionState,
   CURRENT_PROTOCOL_VERSION,
-} from '../types/protocol';
-import { HermesEventBus } from './eventBus';
+} from "../types/protocol";
+import { HermesEventBus } from "./eventBus";
 
 export interface HermesClientConfig {
   url?: string;
@@ -28,17 +28,18 @@ export interface ClientMetrics {
 
 export class HermesClient {
   public readonly eventBus: HermesEventBus;
-  private config: Required<Omit<HermesClientConfig, 'WebSocketClass'>> & {
+  private config: Required<Omit<HermesClientConfig, "WebSocketClass">> & {
     WebSocketClass: typeof WebSocket;
   };
   private ws: WebSocket | null = null;
-  private state: ConnectionState = 'disconnected';
+  private state: ConnectionState = "disconnected";
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private heartbeatTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
   private lastPingTime: number | null = null;
   private isIntentionallyClosed = false;
+  private incomingMessageQueue: Promise<void> = Promise.resolve();
 
   private metrics: ClientMetrics = {
     reconnectAttempts: 0,
@@ -51,16 +52,22 @@ export class HermesClient {
 
   constructor(config: HermesClientConfig = {}, eventBus?: HermesEventBus) {
     this.eventBus = eventBus ?? new HermesEventBus();
-    const defaultWs = typeof WebSocket !== 'undefined' ? WebSocket : (null as unknown as typeof WebSocket);
+    const defaultWs =
+      typeof WebSocket !== "undefined"
+        ? WebSocket
+        : (null as unknown as typeof WebSocket);
 
     const envUrl =
-      typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_HERMES_WS_URL
-        ? (import.meta.env.VITE_HERMES_WS_URL as string)
+      typeof import.meta !== "undefined" && import.meta.env
+        ? ((import.meta.env.VITE_RUNTIME_WS_URL as string | undefined) ??
+          (import.meta.env.VITE_HERMES_WS_URL as string | undefined))
         : undefined;
 
     this.config = {
-      url: config.url ?? envUrl ?? 'ws://localhost:8765/ws',
-      sessionId: config.sessionId ?? `sess_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`,
+      url: config.url ?? envUrl ?? "ws://127.0.0.1:8765/ws",
+      sessionId:
+        config.sessionId ??
+        `sess_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`,
       autoReconnect: config.autoReconnect ?? true,
       minReconnectDelayMs: config.minReconnectDelayMs ?? 500,
       maxReconnectDelayMs: config.maxReconnectDelayMs ?? 8000,
@@ -82,28 +89,28 @@ export class HermesClient {
     this.isIntentionallyClosed = false;
     this.clearTimers();
 
-    if (this.state === 'connected' && this.ws) {
+    if (this.state === "connected" && this.ws) {
       return;
     }
 
-    this.setState(this.reconnectAttempts > 0 ? 'reconnecting' : 'connecting');
+    this.setState(this.reconnectAttempts > 0 ? "reconnecting" : "connecting");
 
     try {
       const WS = this.config.WebSocketClass;
       if (!WS) {
-        throw new Error('No WebSocket implementation available.');
+        throw new Error("No WebSocket implementation available.");
       }
 
       this.ws = new WS(this.config.url);
-      this.ws.binaryType = 'arraybuffer';
+      this.ws.binaryType = "arraybuffer";
 
       this.ws.onopen = this.handleOpen.bind(this);
       this.ws.onmessage = this.handleMessage.bind(this);
       this.ws.onclose = this.handleClose.bind(this);
       this.ws.onerror = this.handleError.bind(this);
     } catch (err) {
-      console.error('[HermesClient] Failed to initialize WebSocket:', err);
-      this.setState('error');
+      console.error("[HermesClient] Failed to initialize WebSocket:", err);
+      this.setState("error");
       this.scheduleReconnect();
     }
   }
@@ -112,16 +119,19 @@ export class HermesClient {
     this.isIntentionallyClosed = true;
     this.clearTimers();
     if (this.ws) {
-      this.ws.close(1000, 'Client disconnected');
+      this.ws.close(1000, "Client disconnected");
       this.ws = null;
     }
-    this.setState('disconnected');
+    this.setState("disconnected");
     this.reconnectAttempts = 0;
   }
 
   public sendEvent(event: HermesClientEvent): void {
     if (!this.ws || this.ws.readyState !== 1 /* OPEN */) {
-      console.warn('[HermesClient] Cannot send event, socket is not open:', event.type);
+      console.warn(
+        "[HermesClient] Cannot send event, socket is not open:",
+        event.type,
+      );
       return;
     }
 
@@ -136,17 +146,29 @@ export class HermesClient {
       return;
     }
 
-    this.ws.send(chunk);
+    const payload =
+      chunk instanceof Uint8Array ? Uint8Array.from(chunk).buffer : chunk;
+    this.ws.send(payload);
     this.metrics.totalAudioFramesSent++;
+  }
+
+  public canSendAudio(): boolean {
+    return this.ws?.readyState === 1;
+  }
+
+  public getBufferedAmount(): number {
+    return this.ws?.bufferedAmount ?? 0;
   }
 
   public sendPing(): void {
     if (!this.ws || this.ws.readyState !== 1) return;
     this.lastPingTime = Date.now();
     try {
-      this.ws.send(JSON.stringify({ type: 'PING', timestamp: this.lastPingTime }));
+      this.ws.send(
+        JSON.stringify({ type: "PING", timestamp: this.lastPingTime }),
+      );
     } catch (e) {
-      console.error('[HermesClient] Failed to send ping:', e);
+      console.error("[HermesClient] Failed to send ping:", e);
     }
   }
 
@@ -167,18 +189,23 @@ export class HermesClient {
   }
 
   private handleOpen(): void {
-    this.setState('connected');
+    this.setState("connected");
     this.reconnectAttempts = 0;
     this.metrics.lastConnectedAt = Date.now();
 
     // Send handshake CLIENT_HELLO with lastSeq for gap resumption
     const lastSeq = this.eventBus.getLastSeenSeq();
     this.sendEvent({
-      type: 'CLIENT_HELLO',
+      type: "CLIENT_HELLO",
       protocolVersion: CURRENT_PROTOCOL_VERSION,
       sessionId: this.config.sessionId,
       lastSeq: lastSeq,
-      capabilities: ['audio_pcm_16k', 'audio_opus'],
+      capabilities: [
+        "audio_pcm_s16le_16k_mono_20ms",
+        "tts_pcm_f32le_24k_mono",
+        "command_ack",
+        "state_snapshot",
+      ],
     });
 
     this.startHeartbeat();
@@ -186,18 +213,47 @@ export class HermesClient {
 
   private handleMessage(ev: MessageEvent): void {
     const data = ev.data;
+    this.incomingMessageQueue = this.incomingMessageQueue
+      .then(async () => {
+        const blobLike = data as { arrayBuffer?: () => Promise<ArrayBuffer> } | null;
+        let normalized: unknown = data;
+        if (typeof data !== "string" && typeof blobLike?.arrayBuffer === "function") {
+          normalized = await blobLike.arrayBuffer();
+        } else if (ArrayBuffer.isView(data)) {
+          normalized = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+        } else if (Object.prototype.toString.call(data) === "[object ArrayBuffer]") {
+          // Cross-realm ArrayBuffers can fail instanceof checks. Copy through a
+          // view so the event bus receives an ArrayBuffer from this realm.
+          normalized = Uint8Array.from(new Uint8Array(data as ArrayBuffer)).buffer;
+        }
+        this.processMessage(normalized);
+      })
+      .catch((error: unknown) => {
+        console.error("[HermesClient] Failed to process incoming message:", error);
+      });
+  }
 
-    // Check for pong heartbeat
-    if (typeof data === 'string' && data.includes('"type":"PONG"')) {
-      if (this.lastPingTime !== null) {
-        this.metrics.lastPingRttMs = Date.now() - this.lastPingTime;
-        this.lastPingTime = null;
+  private processMessage(data: unknown): void {
+
+    // PONG is transport control data, not a versioned Hermes event. Parse it
+    // structurally because JSON serializers are free to add whitespace.
+    if (typeof data === "string") {
+      try {
+        const message = JSON.parse(data) as { type?: unknown };
+        if (message.type === "PONG") {
+          if (this.lastPingTime !== null) {
+            this.metrics.lastPingRttMs = Date.now() - this.lastPingTime;
+            this.lastPingTime = null;
+          }
+          if (this.heartbeatTimeoutTimer) {
+            clearTimeout(this.heartbeatTimeoutTimer);
+            this.heartbeatTimeoutTimer = null;
+          }
+          return;
+        }
+      } catch {
+        // The event bus owns validation and diagnostics for non-control data.
       }
-      if (this.heartbeatTimeoutTimer) {
-        clearTimeout(this.heartbeatTimeoutTimer);
-        this.heartbeatTimeoutTimer = null;
-      }
-      return;
     }
 
     this.eventBus.handleRawMessage(data);
@@ -209,18 +265,20 @@ export class HermesClient {
     this.ws = null;
 
     if (this.isIntentionallyClosed) {
-      this.setState('disconnected');
+      this.setState("disconnected");
     } else {
-      console.warn(`[HermesClient] WebSocket closed (${ev.code}: ${ev.reason}). Scheduling reconnect...`);
-      this.setState('reconnecting');
+      console.warn(
+        `[HermesClient] WebSocket closed (${ev.code}: ${ev.reason}). Scheduling reconnect...`,
+      );
+      this.setState("reconnecting");
       this.scheduleReconnect();
     }
   }
 
   private handleError(err: Event): void {
-    console.error('[HermesClient] WebSocket error encountered:', err);
+    console.error("[HermesClient] WebSocket error encountered:", err);
     if (!this.ws || this.ws.readyState !== 1) {
-      this.setState('error');
+      this.setState("error");
     }
   }
 
@@ -234,8 +292,9 @@ export class HermesClient {
 
     // Exponential backoff with random jitter (0.8 - 1.2)
     const baseDelay = Math.min(
-      this.config.minReconnectDelayMs * Math.pow(this.config.reconnectMultiplier, this.reconnectAttempts - 1),
-      this.config.maxReconnectDelayMs
+      this.config.minReconnectDelayMs *
+        Math.pow(this.config.reconnectMultiplier, this.reconnectAttempts - 1),
+      this.config.maxReconnectDelayMs,
     );
     const jitter = 0.8 + Math.random() * 0.4;
     const delay = Math.round(baseDelay * jitter);
@@ -254,12 +313,14 @@ export class HermesClient {
   private startHeartbeat(): void {
     this.stopHeartbeat();
     this.heartbeatTimer = setInterval(() => {
-      if (this.state === 'connected') {
+      if (this.state === "connected") {
         this.sendPing();
         this.heartbeatTimeoutTimer = setTimeout(() => {
-          console.warn('[HermesClient] Heartbeat timeout! Disconnecting to trigger reconnect.');
+          console.warn(
+            "[HermesClient] Heartbeat timeout! Disconnecting to trigger reconnect.",
+          );
           if (this.ws) {
-            this.ws.close(4000, 'Heartbeat timeout');
+            this.ws.close(4000, "Heartbeat timeout");
           }
         }, this.config.heartbeatTimeoutMs);
       }

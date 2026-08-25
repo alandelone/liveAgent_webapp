@@ -1,5 +1,5 @@
-import { AgentDescriptor, AgentManifestEvent } from '../types/protocol';
-import { HermesEventBus } from '../protocol/eventBus';
+import { AgentDescriptor, AgentManifestEvent } from "../types/protocol";
+import { HermesEventBus } from "../protocol/eventBus";
 
 export type ManifestListener = (agents: AgentDescriptor[]) => void;
 
@@ -18,12 +18,22 @@ export class ManifestStore {
     if (this.unsubscriber) {
       this.unsubscriber();
     }
-    this.unsubscriber = eventBus.on('AGENT_MANIFEST', (event: AgentManifestEvent) => {
-      this.setManifest(event.agents);
-    });
+    this.unsubscriber = eventBus.on(
+      "AGENT_MANIFEST",
+      (event: AgentManifestEvent) => {
+        this.setManifest(event.agents);
+      },
+    );
   }
 
   public setManifest(agentsList: AgentDescriptor[]): void {
+    const orchestrators = agentsList.filter((agent) => agent.isOrchestrator);
+    if (orchestrators.length !== 1) {
+      throw new Error(
+        `AGENT_MANIFEST must contain exactly one orchestrator; received ${orchestrators.length}`,
+      );
+    }
+
     this.agents.clear();
     agentsList.forEach((agent) => {
       this.agents.set(agent.id, agent);
@@ -40,7 +50,7 @@ export class ManifestStore {
   }
 
   public getOrchestrator(): AgentDescriptor | undefined {
-    return this.getAgents().find((a) => a.isOrchestrator || a.id === 'hermes');
+    return this.getAgents().find((agent) => agent.isOrchestrator);
   }
 
   public getSideAgents(): AgentDescriptor[] {
@@ -67,7 +77,7 @@ export class ManifestStore {
       try {
         listener(snapshot);
       } catch (err) {
-        console.error('[ManifestStore] Error in listener:', err);
+        console.error("[ManifestStore] Error in listener:", err);
       }
     });
   }

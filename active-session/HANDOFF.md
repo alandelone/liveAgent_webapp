@@ -1,41 +1,37 @@
-# Session Handoff: v0.2 Local Supervisor Replanning
+# Session Handoff: v0.2.0 Complete
 
-## Current Stage
+## Status
 
-- `mission_status.json`: Phase 2 Discovery, Planner, in progress.
-- Target: FEAT-014 through FEAT-017.
-- Accepted architecture: the Local Supervisor is the primary orchestrator; Hermes is an optional escalation worker.
-- First-release policy: read-only and explicitly allowlisted local reversible operations only; consequential actions return `BLOCKED_POLICY`; no approval protocol.
+- Mission: complete; Evaluator gate passed.
+- Features: FEAT-001 through FEAT-032 all pass.
+- Production: running at `http://127.0.0.1:5173/live/`.
+- Deployment: non-Docker Windows production-preview UI + Windows CPU Kokoro + one prewarmed Debian WSL GPU Qwen3-ASR engine.
+- Chinese response-interruption command: `听我说`.
 
-## Verified Baseline
+## Final evidence
 
-- FEAT-001 through FEAT-013 remain passed only under their narrowed transport/UI prototype descriptions.
-- Latest baseline check: 41/41 tests passed across 15 files; `npm run lint` reported 0 TypeScript errors.
-- Historical evaluator evidence is archived in `stage-gates/archive/v0.1-verification-report.md`.
-- The v1 bridge supports JSON handshake/replay and routes text/target requests to Hermes CLI profiles.
+- Mandarin CER 0.000; English WER 0.000; code-switch MER 0.087.
+- Key terms, exact commands, deterministic routes/policies, and production terminal outcomes all pass.
+- First audio p50 2604.404 ms; p95 2963.833 ms. p99 correctly omitted for fewer than 1,000 observations.
+- Human acoustic interruption 0.100 ms; 0 playback underruns and overruns in the verified 193,200-frame Chrome response.
+- GPU evidence: 6097 MiB used, 5898 MiB free, 47 C, one `VLLM::EngineCore`.
+- Reliability: 100/100 deterministic legal terminals and 20/20 production legal terminals.
+- Recovery: controlled stop released the engine and capacity; ordered restart restored TTS, UI, GPU isolation, and gateway health.
+- Full verification: 63/63 frontend assertions, 44/44 Python tests, fixtures/corpus, lint, build, zero-vulnerability audit, and isolated gateway smoke passed.
 
-## Capabilities Not Yet Proven
+## Artifacts
 
-- The active browser voice path uses Web Speech API and an `AnalyserNode`; it does not send AudioWorklet PCM.
-- `server.py` discards inbound binary audio and does not run Silero VAD or Qwen3-ASR.
-- Playback is simulated; no real TTS audio stream is produced.
-- Acoustic barge-in, Local Supervisor routing, worker scheduling, canonical tracing, and 12 GB model co-residency remain pending.
-- Existing code still contains hardcoded `hermes` orchestrator assumptions in state/manifest handling and component names.
+- `stage-gates/04-verification-report.md`
+- `stage-gates/archive/v0.2-phase7-verification-report.md`
+- `deployment/release-evidence.json`
+- `deployment/recovery-evidence.json`
+- `test-fixtures/v0.2/asr-corpus/manifest.json`
 
-## Documentation Decisions Completed
+## Operating constraints
 
-- ADR-008 supersedes the Hermes-only control-plane decision while preserving browser/backend separation.
-- ADR-009 defers approval and defines deterministic `BLOCKED_POLICY` behavior.
-- Product vision, project context, interaction design, voice pipeline, protocol, feature list, and Discovery gate now use Local Supervisor ownership.
-- The protocol distinguishes implemented v1 behavior from v0.2 target semantics, including server-authoritative VAD and non-replayable binary audio.
+- Keep GPU reserved for Qwen ASR. Do not retry CUDA Kokoro plus WSL Qwen ASR on this host; that pairing caused a Kernel-Power 41 restart and startup now refuses it.
+- Keep the deployment localhost/private-WSL-interface only. Public/TLS/authenticated hosting is outside v0.2.0.
+- The fixed selected-TTS corpus is regression evidence, not population-level human speech accuracy.
+- Use `scripts/npm.ps1` so verification runs on the pinned Node 24 toolchain instead of the host's Node 18.
 
-## Remaining Discovery Work
-
-1. Select and repair the Linux GPU runtime path: WSL2, GPU-enabled Linux container, or a measured split arrangement.
-2. Freeze the next protocol version, compatibility window, audio framing/queue limits, replay overflow, and command acknowledgement rules.
-3. Define trace redaction, retention, semantic sampling, and backpressure limits with volume estimates.
-4. Define the deterministic audio/routing fixture taxonomy and statistical reporting method.
-5. Name falsifiable experiments for every remaining hardware, routing-quality, acoustic, and transport hypothesis.
-
-Do not advance to `02-tech-design.md` or mark FEAT-014 through FEAT-017 passed until the Discovery checklist and evaluator evidence are complete.
-
+No remaining work is required for the active goal.

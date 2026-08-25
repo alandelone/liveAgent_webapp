@@ -11,6 +11,12 @@
 
 ## Repository Modules
 - `docs/`: Product vision, architecture specs, and API contracts.
+- `runtime/`: Trace/logging/benchmark primitives plus bounded PCM ingress, VAD/ASR adapters, transcript stabilization, deterministic policy, Supervisor/scheduler/Hermes boundaries, TTS adapters, and revisioned response coordination.
+- `src/audio/`: Browser AudioWorklet lifecycle, stateful resampling/framing, bounded PCM uplink, playback, echo, and interruption controllers.
+- `public/audio-capture-worklet.js`: Off-main-thread mono PCM capture and exact 20 ms framing.
+- `public/audio-playback-worklet.js`: Off-main-thread bounded float32 PCM ring-buffer rendering, drain, RMS, underrun, overrun, and generation-stop handling.
+- `scripts/`: Reproducible Node/WSL bootstrap, preflight, fixture generation, gateway smoke, and GPU/Silero/model-adapter smoke commands.
+- `deployment/`: Supported localhost deployment and rollback runbook.
 - `rules/`: Development standards, testing contracts, and linting guidelines.
 - `stage-gates/`: Unidirectional task gate pipeline (01-Discovery -> 02-Design -> 03-Execution -> 04-Verification).
 - `active-session/`: Live session runtime logs and agent handoff files.

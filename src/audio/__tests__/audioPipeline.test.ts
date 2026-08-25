@@ -1,27 +1,51 @@
 import { describe, it, expect, vi } from 'vitest';
-import { AudioPlaybackQueue } from '../audioPlaybackQueue';
+import { AudioPlaybackQueue, PlaybackBackend, WorkletMessage } from '../audioPlaybackQueue';
 import { EchoSuppressor } from '../echoSuppressor';
 import { BargeInManager } from '../bargeInManager';
-import { VoiceController } from '../voiceController';
+import { acousticInputMode, VoiceController } from '../voiceController';
 import { HermesEventBus } from '../../protocol/eventBus';
 import { HermesClient } from '../../protocol/HermesClient';
 import { AgentStateMachine } from '../../state/agentStateMachine';
 
-describe('Streaming Voice Pipeline, Echo Cancellation & Barge-in (FEAT-006 & FEAT-007)', () => {
-  it('audio playback queue enqueues chunks, notifies volume, and can be flushed instantly', () => {
-    const queue = new AudioPlaybackQueue();
+class FakePlaybackBackend implements PlaybackBackend {
+  public messages: Array<Record<string, unknown>> = [];
+  private listener: ((message: WorkletMessage) => void) | null = null;
+  async prepare(listener: (message: WorkletMessage) => void) { this.listener = listener; }
+  configure(generation: number, sampleRateHz: number) { this.messages.push({ type: 'configure', generation, sampleRateHz }); }
+  push(generation: number, samples: Float32Array) { this.messages.push({ type: 'samples', generation, samples: Array.from(samples) }); }
+  end(generation: number) { this.messages.push({ type: 'end', generation }); }
+  stop(generation: number) { this.messages.push({ type: 'stop', generation }); }
+  async close() { this.messages.push({ type: 'close' }); }
+  emit(message: WorkletMessage) { this.listener?.(message); }
+}
+
+const startEvent = {
+  type: 'TTS_START' as const, seq: 1, agentId: 'supervisor', turnId: 'turn', streamId: 'stream',
+  format: { encoding: 'pcm_f32le' as const, sampleRateHz: 24000 as const, channels: 1 as const, chunkFrames: 2400 },
+};
+
+describe('Streaming Voice Pipeline, Echo Cancellation & Barge-in (FEAT-006, FEAT-007 & FEAT-027)', () => {
+  it('fails closed to push-to-talk unless browser AEC is actually applied', () => {
+    expect(acousticInputMode({})).toBe('push_to_talk');
+    expect(acousticInputMode({ echoCancellation: false })).toBe('push_to_talk');
+    expect(acousticInputMode({ echoCancellation: true })).toBe('hands_free');
+  });
+  it('transfers real float32 samples to the playback backend and can be flushed instantly', async () => {
+    const backend = new FakePlaybackBackend();
+    const queue = new AudioPlaybackQueue(backend);
     const volListener = vi.fn();
     queue.onVolumeChange(volListener);
-
-    // Create synthetic 16-bit PCM buffer (100 samples)
-    const buffer = new Int16Array(100);
-    for (let i = 0; i < 100; i++) {
-      buffer[i] = 10000;
-    }
-
+    queue.startStream(startEvent);
+    queue.startStream({ ...startEvent, streamId: 'nested-stream' });
+    expect(queue.getActiveStreamId()).toBe('stream');
+    expect(queue.getMetrics().invalidChunks).toBe(1);
+    await Promise.resolve();
+    const buffer = new Float32Array([0.25, -0.5, 0.75]);
     queue.enqueueChunk(buffer.buffer);
     expect(queue.getIsPlaying()).toBe(true);
-    expect(volListener).toHaveBeenCalled();
+    expect(backend.messages.some((message) => message.type === 'samples')).toBe(true);
+    backend.emit({ type: 'metrics', generation: 2, rms: 0.25, bufferedFrames: 3, underrunFrames: 0, overrunFrames: 0, renderedFrames: 3 });
+    expect(volListener).toHaveBeenCalledWith(0.75);
 
     // Instant flush / stop
     queue.flush();
@@ -46,7 +70,7 @@ describe('Streaming Voice Pipeline, Echo Cancellation & Barge-in (FEAT-006 & FEA
     expect(suppressor.isEchoSuppressed()).toBe(true);
   });
 
-  it('barge-in immediately halts TTS, sends USER_INTERRUPT, and resets turn without affecting tasks', () => {
+  it('barge-in immediately halts TTS, sends USER_INTERRUPT, and resets turn without affecting tasks', async () => {
     const eventBus = new HermesEventBus();
     const sentEvents: any[] = [];
     eventBus.on('client_event', (ev) => sentEvents.push(ev));
@@ -58,14 +82,16 @@ describe('Streaming Voice Pipeline, Echo Cancellation & Barge-in (FEAT-006 & FEA
     });
 
     const stateMachine = new AgentStateMachine(eventBus);
-    const playbackQueue = new AudioPlaybackQueue();
+    const playbackQueue = new AudioPlaybackQueue(new FakePlaybackBackend());
     const bargeIn = new BargeInManager(client, stateMachine, playbackQueue);
 
     // Setup active playback & speaking state
     stateMachine.predictState('speaking');
     stateMachine.setTurnId('turn_888');
-    const dummyChunk = new Uint8Array([1, 2, 3, 4]);
-    playbackQueue.enqueueChunk(dummyChunk);
+    playbackQueue.startStream(startEvent);
+    await Promise.resolve();
+    const dummyChunk = new Float32Array([0.1, 0.2]);
+    playbackQueue.enqueueChunk(dummyChunk.buffer);
     expect(playbackQueue.getIsPlaying()).toBe(true);
 
     // Trigger barge-in
@@ -112,5 +138,69 @@ describe('Streaming Voice Pipeline, Echo Cancellation & Barge-in (FEAT-006 & FEA
 
     controller.handlePttRelease();
     expect(stateMachine.getSnapshot().mainState).toBe('thinking');
+  });
+
+  it('keeps presentation speaking until the real worklet reports drained', async () => {
+    const eventBus = new HermesEventBus();
+    const client = new HermesClient({}, eventBus);
+    const stateMachine = new AgentStateMachine(eventBus);
+    const backend = new FakePlaybackBackend();
+    const controller = new VoiceController(client, stateMachine, { playbackBackend: backend });
+    eventBus.handleRawMessage({
+      type: 'AGENT_MANIFEST', seq: 0, agents: [{ id: 'supervisor', name: 'Supervisor', color: '#000', icon: 'brain', isOrchestrator: true }],
+    });
+    eventBus.handleRawMessage(startEvent);
+    await Promise.resolve();
+    eventBus.emitAudio(new Float32Array([0.1, 0.2]).buffer);
+    eventBus.handleRawMessage({
+      type: 'TTS_END', seq: 2, agentId: 'supervisor', turnId: 'turn', streamId: 'stream', outcome: 'COMPLETED',
+    });
+    expect(stateMachine.getSnapshot().isSpeaking).toBe(true);
+    backend.emit({ type: 'drained', generation: 2 });
+    expect(stateMachine.getSnapshot().mainState).toBe('idle');
+    controller.dispose();
+  });
+
+  it('reactivates event subscriptions after a development lifecycle cleanup', async () => {
+    const eventBus = new HermesEventBus();
+    const client = new HermesClient({}, eventBus);
+    const stateMachine = new AgentStateMachine(eventBus);
+    const backend = new FakePlaybackBackend();
+    const controller = new VoiceController(client, stateMachine, { playbackBackend: backend });
+
+    controller.dispose();
+    controller.activate();
+    eventBus.handleRawMessage(startEvent);
+    await Promise.resolve();
+    eventBus.emitAudio(new Float32Array([0.1, 0.2]).buffer);
+
+    expect(controller.playbackQueue.getMetrics().chunksPlayed).toBe(1);
+    controller.dispose();
+  });
+
+  it('records authoritative acoustic interruption stop latency', async () => {
+    const eventBus = new HermesEventBus();
+    const client = new HermesClient({}, eventBus);
+    const stateMachine = new AgentStateMachine(eventBus);
+    const backend = new FakePlaybackBackend();
+    const controller = new VoiceController(client, stateMachine, { playbackBackend: backend });
+    const listener = vi.fn();
+    controller.onAcousticInterruption(listener);
+
+    eventBus.handleRawMessage(startEvent);
+    await Promise.resolve();
+    eventBus.emitAudio(new Float32Array([0.1, 0.2]).buffer);
+    eventBus.handleRawMessage({
+      type: 'USER_SPEECH_START', sessionId: 'session', turnId: 'barge', seq: 2,
+    });
+    eventBus.handleRawMessage({
+      type: 'TTS_END', seq: 3, agentId: 'supervisor', turnId: 'turn', streamId: 'stream', outcome: 'INTERRUPTED',
+    });
+
+    expect(controller.playbackQueue.getIsPlaying()).toBe(false);
+    expect(controller.getAcousticInterruptionMetrics().totalAuthoritativeInterruptions).toBe(1);
+    expect(controller.getAcousticInterruptionMetrics().lastStopLatencyMs).not.toBeNull();
+    expect(listener).toHaveBeenCalledTimes(1);
+    controller.dispose();
   });
 });

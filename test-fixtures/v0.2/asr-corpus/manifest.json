@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "scriptVersion": 1,
+  "sampleRateHz": 16000,
+  "encoding": "pcm_s16le",
+  "source": {
+    "backend": "kokoro-loopback",
+    "model": "hexgrad/Kokoro-82M-v1.1-zh",
+    "revision": "01e7505bd6a7a2ac4975463114c3a7650a9f7218",
+    "limitation": "fixed selected-TTS regression speech; not population-level human accuracy"
+  },
+  "cases": [
+    {
+      "id": "asr-zh-command",
+      "language": "zh",
+      "text": "听我说",
+      "keyTerms": [
+        "听我说"
+      ],
+      "expectedRoute": "command",
+      "expectedCommand": "STOP_SPEAKING",
+      "path": "asr-zh-command.wav",
+      "sha256": "b3adc543035db779b48999d21edcae2f05d485b93571b8ff5d49fe9e8f87603e",
+      "frames": 37600,
+      "durationMs": 2350.0,
+      "ttsLanguage": "Chinese",
+      "speaker": "Vivian"
+    },
+    {
+      "id": "asr-zh-status",
+      "language": "zh",
+      "text": "告诉我当前状态",
+      "keyTerms": [
+        "当前状态"
+      ],
+      "expectedRoute": "command",
+      "expectedCommand": "STATUS",
+      "path": "asr-zh-status.wav",
+      "sha256": "fb0263de595f2bf94e547e66630b79af9d5a9be9a5e31e2b5dd7d22bcd52bffb",
+      "frames": 60800,
+      "durationMs": 3800.0,
+      "ttsLanguage": "Chinese",
+      "speaker": "Vivian"
+    },
+    {
+      "id": "asr-zh-research",
+      "language": "zh",
+      "text": "查看项目文档",
+      "keyTerms": [
+        "项目文档"
+      ],
+      "expectedRoute": "research",
+      "path": "asr-zh-research.wav",
+      "sha256": "57d08b04931ff56dac72ea9bd7cdab5fbad1ee996f9d932b1efdfcc4354811b5",
+      "frames": 55600,
+      "durationMs": 3475.0,
+      "ttsLanguage": "Chinese",
+      "speaker": "Vivian"
+    },
+    {
+      "id": "asr-zh-coding",
+      "language": "zh",
+      "text": "修复类型错误",
+      "keyTerms": [
+        "类型错误"
+      ],
+      "expectedRoute": "coding",
+      "path": "asr-zh-coding.wav",
+      "sha256": "51adf42a16535f3a00489d537d0c96f89c6e40a8e3b0fa36d527d2d455716f8b",
+      "frames": 57600,
+      "durationMs": 3600.0,
+      "ttsLanguage": "Chinese",
+      "speaker": "Vivian"
+    },
+    {
+      "id": "asr-en-command",
+      "language": "en",
+      "text": "Stop speaking",
+      "keyTerms": [
+        "stop speaking"
+      ],
+      "expectedRoute": "command",
+      "expectedCommand": "STOP_SPEAKING",
+      "path": "asr-en-command.wav",
+      "sha256": "b9cdc7fcdddd4313c7962adff78205540f535d006862e3a8417ee0d6706a9df1",
+      "frames": 50400,
+      "durationMs": 3150.0,
+      "ttsLanguage": "English",
+      "speaker": "Ryan"
+    },
+    {
+      "id": "asr-en-status",
+      "language": "en",
+      "text": "Tell me the current status",
+      "keyTerms": [
+        "current status"
+      ],
+      "expectedRoute": "command",
+      "expectedCommand": "STATUS",
+      "path": "asr-en-status.wav",
+      "sha256": "dbe75479dcbd9556e0efa2879a00fcbd0466fb396c926a73b5cb54f3d0bc1ed8",
+      "frames": 57600,
+      "durationMs": 3600.0,
+      "ttsLanguage": "English",
+      "speaker": "Ryan"
+    },
+    {
+      "id": "asr-en-research",
+      "language": "en",
+      "text": "Review the architecture docs",
+      "keyTerms": [
+        "architecture"
+      ],
+      "expectedRoute": "research",
+      "path": "asr-en-research.wav",
+      "sha256": "16c2303e4c716d8e63fcf64af7609a097b36df5e1cbfa5f88ca095a5470e4b12",
+      "frames": 61600,
+      "durationMs": 3850.0,
+      "ttsLanguage": "English",
+      "speaker": "Ryan"
+    },
+    {
+      "id": "asr-en-coding",
+      "language": "en",
+      "text": "Fix the TypeScript error",
+      "keyTerms": [
+        "TypeScript"
+      ],
+      "expectedRoute": "coding",
+      "path": "asr-en-coding.wav",
+      "sha256": "f1f02887ebf0dd9c74798de5473222dc3ae33e3a27636e86fba98d46cce02c78",
+      "frames": 57200,
+      "durationMs": 3575.0,
+      "ttsLanguage": "English",
+      "speaker": "Ryan"
+    },
+    {
+      "id": "asr-mix-research",
+      "language": "code-switch",
+      "text": "帮我 review the API docs",
+      "keyTerms": [
+        "review",
+        "API"
+      ],
+      "expectedRoute": "research",
+      "path": "asr-mix-research.wav",
+      "sha256": "4d37b796f66b588c2134fea5b3a7d8620979fa094b02dea15fb2f76aa14c5f35",
+      "frames": 67200,
+      "durationMs": 4200.0,
+      "ttsLanguage": "Chinese",
+      "speaker": "Vivian"
+    },
+    {
+      "id": "asr-mix-coding",
+      "language": "code-switch",
+      "text": "把这个 TypeScript bug fix 掉",
+      "keyTerms": [
+        "TypeScript",
+        "bug",
+        "fix"
+      ],
+      "expectedRoute": "coding",
+      "path": "asr-mix-coding.wav",
+      "sha256": "75f9dc7469c997610dc031a99196ae8e0467703293ad0c17f0a00a9adea9868d",
+      "frames": 67600,
+      "durationMs": 4225.0,
+      "ttsLanguage": "Chinese",
+      "speaker": "Vivian"
+    },
+    {
+      "id": "asr-mix-browser",
+      "language": "code-switch",
+      "text": "open 一下 localhost dashboard",
+      "keyTerms": [
+        "localhost",
+        "dashboard"
+      ],
+      "expectedRoute": "browser",
+      "path": "asr-mix-browser.wav",
+      "sha256": "ff4858b902739729c1acfaae517dfb98c4634012c0a1003a32fd6a918aca855c",
+      "frames": 65200,
+      "durationMs": 4075.0,
+      "ttsLanguage": "Chinese",
+      "speaker": "Vivian"
+    },
+    {
+      "id": "asr-mix-status",
+      "language": "code-switch",
+      "text": "告诉我 current status",
+      "keyTerms": [
+        "current status"
+      ],
+      "expectedRoute": "command",
+      "expectedCommand": "STATUS",
+      "path": "asr-mix-status.wav",
+      "sha256": "dc9ee7885502cdb5f903745a9a1d3f46b87c77f522d3bbbb9db8af80ec69bba2",
+      "frames": 60000,
+      "durationMs": 3750.0,
+      "ttsLanguage": "Chinese",
+      "speaker": "Vivian"
+    }
+  ]
+}

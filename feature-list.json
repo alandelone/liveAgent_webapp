@@ -1,8 +1,8 @@
 {
   "project": "livechat_agent",
-  "version": "0.2.0-planning",
+  "version": "0.2.0",
   "description": "Local-first real-time voice agent interface with Supervisor orchestration, a specialized agent pool, and Hermes escalation",
-  "currentPhase": 2,
+  "currentPhase": 7,
   "releasePolicy": "The first release permits read-only operations and explicitly allowlisted local reversible operations only. Externally visible, paid, irreversible, and high-impact actions must return BLOCKED_POLICY and must not execute.",
   "phases": {
     "0": "Verified Transport & Replay Baseline",
@@ -125,7 +125,7 @@
       "category": "Architecture Governance",
       "name": "Supervisor Runtime Boundary & Superseding ADR",
       "description": "Define the local Qwen Supervisor as the primary orchestrator for routing and agent-pool tracking, define Hermes as an escalation worker, locate each runtime component, and replace contradictory Hermes-only invariants through a superseding ADR and synchronized product/protocol documentation. The versioned migration must derive the orchestrator from AGENT_MANIFEST.isOrchestrator and enumerate all production behavior that hardcodes the hermes identity.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-015",
@@ -133,7 +133,7 @@
       "category": "Platform",
       "name": "Supported Linux GPU Runtime Preflight",
       "description": "Provide a functioning WSL2 Linux distribution or GPU-enabled Linux container on the Windows host, verify Linux-side NVIDIA access, pin compatible runtime versions, and complete a Qwen3-ASR streaming smoke test. Native Windows vLLM and community forks are not assumed supported baselines.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-016",
@@ -141,7 +141,7 @@
       "category": "Observability",
       "name": "Canonical Trace Context & Strategic Logging Policy",
       "description": "Define and propagate traceId, sessionId, turnId, revisionId, taskId, jobId, parentJobId, routeId, agentId, and attempt. Store structured route/job/error/latency records with sampling, redaction, retention, and backpressure policies. The Web UI receives only public task summaries.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-017",
@@ -149,7 +149,7 @@
       "category": "Test Infrastructure",
       "name": "Deterministic Voice Corpus & Benchmark Harness",
       "description": "Create versioned fixed audio and event fixtures with expected VAD boundaries, transcript revisions, route labels, policy blocks, cancellation outcomes, and terminal states. Separate deterministic CI replay from hardware/model benchmarks and record sample-size/confidence methodology.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-018",
@@ -157,7 +157,7 @@
       "category": "Browser Audio",
       "name": "AudioWorklet PCM Capture, Resampling & Uplink",
       "description": "Replace browser SpeechRecognition on the primary path with secure-context getUserMedia capture, applied-setting verification, AudioWorklet processing, measured 16 kHz mono resampling, tunable frame sizing and pre-roll, bounded buffering, and binary WebSocket uplink. Preserve text and push-to-talk fallbacks.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-019",
@@ -165,7 +165,7 @@
       "category": "Voice Service",
       "name": "Server PCM Ingestion & Silero VAD",
       "description": "Consume rather than discard client PCM, maintain per-session audio buffers, run Silero VAD as the authoritative endpoint detector, support onset pre-roll and endpoint grace, and emit measurable speech-boundary events without relying on live microphones in CI.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-020",
@@ -173,7 +173,7 @@
       "category": "ASR",
       "name": "Qwen3-ASR 1.7B Streaming Service",
       "description": "Run the official vLLM streaming path, emit partial/final text, record VAD-derived timing, avoid assuming streaming timestamps or calibrated confidence, expose health/backpressure signals, and prove target-host latency and VRAM behavior.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-021",
@@ -181,7 +181,7 @@
       "category": "ASR",
       "name": "Transcript Stabilizer & Chinese-English Glossary",
       "description": "Maintain stablePrefix, tentativeSuffix, and revisionId; derive stability from hypothesis agreement/churn; preserve commands, paths, names, acronyms, and technical terms; invalidate speculative routes after meaning-changing revisions.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-022",
@@ -189,7 +189,7 @@
       "category": "Control & Safety",
       "name": "Deterministic Commands & First-Release BLOCKED_POLICY",
       "description": "Recognize unambiguous stop-speaking, cancel-task, continue, status, and repeat commands before generative routing. Permit only read-only operations and explicitly allowlisted local reversible operations in the first release; deterministically block externally visible, paid, irreversible, and high-impact actions. No WAITING_APPROVAL state or approval protocol is included.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-023",
@@ -197,7 +197,7 @@
       "category": "Supervisor",
       "name": "Structured Local Supervisor Routing",
       "description": "Serve Qwen3 1.7B as a narrow Supervisor that emits schema-validated route, reasonCode, confidence, riskClass, costBand, deadlineMs, and worker-role decisions. Calibrate confidence and compare BF16/quantized configurations rather than assuming 12 GB co-residency.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-024",
@@ -205,7 +205,7 @@
       "category": "Orchestration",
       "name": "Agent Pool Registry, Job Scheduler & Delegation Tracking",
       "description": "Implement manifest-driven logical worker roles, bounded queues, parent/child jobs, concurrency limits, deadlines, heartbeats, state transitions, and public task summaries. Replace hardcoded hermes behavior in mode, state, manifest, transcript, and constellation paths; select the center orchestrator by isOrchestrator. A role may share a runtime; named roles do not imply one resident model per agent.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-025",
@@ -213,7 +213,7 @@
       "category": "Escalation",
       "name": "Hermes Escalation, Budget & Circuit Breaker",
       "description": "Escalate difficult reasoning or low-confidence cases to Hermes with bounded retry, timeout, cloud budget, circuit-breaker, degraded local response, and trace propagation. Hermes is not assumed available or the default route.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-026",
@@ -221,7 +221,7 @@
       "category": "Reliability",
       "name": "Cancellation Isolation, Retry & Idempotency",
       "description": "Keep USER_INTERRUPT response-scoped and TASK_CANCEL task-scoped; preserve valid background completion events; suppress stale voice responses; propagate explicit cancellation only to cancellable descendants; enforce retry budgets and idempotency keys for side-effect-capable adapters.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-027",
@@ -229,7 +229,7 @@
       "category": "TTS / Playback",
       "name": "Real Streaming TTS & Audible Browser Playback",
       "description": "Select and integrate a measured TTS backend, stream correlated audio chunks, replace simulated playback timing with actual AudioWorklet or equivalent non-blocking output, detect underruns, and fall back to text when synthesis or playback fails.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-028",
@@ -237,7 +237,7 @@
       "category": "Response",
       "name": "Response Coordinator & Stale-Result Suppression",
       "description": "Order worker/Hermes results, stream text at safe sentence/clause boundaries, correlate output with trace/turn/task revisions, suppress cancelled or superseded voice responses, and preserve task status updates independently from speech focus.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-029",
@@ -245,7 +245,7 @@
       "category": "Full Duplex Voice",
       "name": "Acoustic Barge-In & Echo Robustness",
       "description": "Verify actual browser AEC settings, output-reference suppression, VAD behavior during TTS, and push-to-talk degradation. Achieve measured interruption latency without allowing USER_INTERRUPT to cancel background jobs or speaker echo to self-interrupt.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-030",
@@ -253,7 +253,7 @@
       "category": "Quality Evaluation",
       "name": "Bilingual ASR, Routing & Policy Evaluation",
       "description": "Evaluate Mandarin, English, and natural code-switching separately against versioned labels. Measure transcript accuracy/stability, key-term preservation, command correctness, route quality, policy blocking, and worker outcomes with documented scoring rules.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-031",
@@ -261,7 +261,7 @@
       "category": "Performance Evaluation",
       "name": "Latency, VRAM, Thermal & Reliability Benchmark",
       "description": "Measure p50/p95 and statistically qualified p99, first-audio latency, queue wait, cancellation latency, underruns, total-board/per-process VRAM, idle baseline, thermals, cost, and long-run terminal-state reliability on the RTX 4070 Ti host.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "FEAT-032",
@@ -269,7 +269,7 @@
       "category": "Operations",
       "name": "Service Recovery & Release Evidence",
       "description": "Provide health checks, startup ordering, bounded restarts, failure/status reporting, WSL/container recovery documentation, deterministic test proof, hardware benchmark artifacts, and a final evaluator report before any new feature passes are set true.",
-      "passes": false
+      "passes": true
     }
   ],
   "deferred": [

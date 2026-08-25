@@ -1,10 +1,13 @@
-import React, { useMemo } from 'react';
-import { ConstellationSnapshot, ActiveSatelliteState } from '../../state/constellationStore';
-import { AgentRoleState, ConnectionState } from '../../types/protocol';
-import { CentralHermesOrb } from '../orb/CentralHermesOrb';
-import { SatelliteOrb } from './SatelliteOrb';
-import { DelegationBeams, BeamCoordinates } from './DelegationBeams';
-import { DirectModeIndicator } from './DirectModeIndicator';
+import React, { useMemo } from "react";
+import {
+  ConstellationSnapshot,
+  ActiveSatelliteState,
+} from "../../state/constellationStore";
+import { AgentRoleState, ConnectionState } from "../../types/protocol";
+import { CentralHermesOrb } from "../orb/CentralHermesOrb";
+import { SatelliteOrb } from "./SatelliteOrb";
+import { DelegationBeams, BeamCoordinates } from "./DelegationBeams";
+import { DirectModeIndicator } from "./DirectModeIndicator";
 
 export interface ConstellationViewProps {
   constellation: ConstellationSnapshot;
@@ -39,7 +42,10 @@ export const ConstellationView: React.FC<ConstellationViewProps> = ({
 }) => {
   // Combine all satellites to render (active + non-dormant first, or all with dormant styling)
   const allSatellites = useMemo(() => {
-    return [...constellation.activeSatellites, ...constellation.dormantSatellites];
+    return [
+      ...constellation.activeSatellites,
+      ...constellation.dormantSatellites,
+    ];
   }, [constellation.activeSatellites, constellation.dormantSatellites]);
 
   // Radius for orbiting satellites
@@ -75,7 +81,7 @@ export const ConstellationView: React.FC<ConstellationViewProps> = ({
         style: {
           left: `${x}px`,
           top: `${y}px`,
-          transform: 'translate(-50%, -50%)',
+          transform: "translate(-50%, -50%)",
         },
       });
     });
@@ -85,7 +91,9 @@ export const ConstellationView: React.FC<ConstellationViewProps> = ({
 
   const directTargetAgent = useMemo(() => {
     if (!targetAgentId) return null;
-    return allSatellites.find((s) => s.agent.id === targetAgentId)?.agent ?? null;
+    return (
+      allSatellites.find((s) => s.agent.id === targetAgentId)?.agent ?? null
+    );
   }, [targetAgentId, allSatellites]);
 
   return (
@@ -130,14 +138,14 @@ export const ConstellationView: React.FC<ConstellationViewProps> = ({
           style={{
             left: `${centerPos.x}px`,
             top: `${centerPos.y}px`,
-            transform: 'translate(-50%, -50%)',
+            transform: "translate(-50%, -50%)",
           }}
         >
           <CentralHermesOrb
             state={mainState}
             connectionState={connectionState}
             detail={detail}
-            agentName={constellation.orchestrator?.name && constellation.orchestrator.name.toLowerCase() !== 'hermes' ? constellation.orchestrator.name : undefined}
+            agentName={constellation.orchestrator?.name}
             volume={volume}
             isListening={isListening}
             isPushToTalk={isPushToTalk}

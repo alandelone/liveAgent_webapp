@@ -1,22 +1,31 @@
-import React, { useEffect, useState } from 'react';
-import { HermesEventBus } from './protocol/eventBus';
-import { HermesClient } from './protocol/HermesClient';
-import { ManifestStore } from './state/manifestStore';
-import { ConstellationStore, ConstellationSnapshot } from './state/constellationStore';
-import { ConnectionStore, ConnectionSnapshot } from './state/connectionStore';
-import { AgentStateMachine, StateMachineSnapshot } from './state/agentStateMachine';
-import { ModeStore, ModeSnapshot } from './state/modeStore';
-import { TranscriptStore, TranscriptTurn } from './state/transcriptStore';
-import { TaskTreeStore, TaskNode } from './state/taskTreeStore';
-import { LayoutStore, LayoutSnapshot } from './state/layoutStore';
-import { VoiceController } from './audio/voiceController';
+import React, { useEffect, useState } from "react";
+import { HermesEventBus } from "./protocol/eventBus";
+import { HermesClient } from "./protocol/HermesClient";
+import { ManifestStore } from "./state/manifestStore";
+import {
+  ConstellationStore,
+  ConstellationSnapshot,
+} from "./state/constellationStore";
+import { ConnectionStore, ConnectionSnapshot } from "./state/connectionStore";
+import {
+  AgentStateMachine,
+  StateMachineSnapshot,
+} from "./state/agentStateMachine";
+import { ModeStore, ModeSnapshot } from "./state/modeStore";
+import { TranscriptStore, TranscriptTurn } from "./state/transcriptStore";
+import { TaskTreeStore, TaskNode } from "./state/taskTreeStore";
+import { LayoutStore, LayoutSnapshot } from "./state/layoutStore";
+import { VoiceController } from "./audio/voiceController";
+import type { AudioPlaybackMetrics } from "./audio/audioPlaybackQueue";
+import type { AppliedAudioSettings } from "./audio/pcmCapture";
+import type { AcousticInterruptionMetrics } from "./audio/voiceController";
 
-import { ConstellationView } from './components/constellation/ConstellationView';
-import { InputFallbackBar } from './components/voice/InputFallbackBar';
-import { TranscriptPanel } from './components/panels/TranscriptPanel';
-import { TaskTreePanel } from './components/panels/TaskTreePanel';
-import { MobileDrawer } from './components/panels/MobileDrawer';
-import { ConnectionModal } from './components/panels/ConnectionModal';
+import { ConstellationView } from "./components/constellation/ConstellationView";
+import { InputFallbackBar } from "./components/voice/InputFallbackBar";
+import { TranscriptPanel } from "./components/panels/TranscriptPanel";
+import { TaskTreePanel } from "./components/panels/TaskTreePanel";
+import { MobileDrawer } from "./components/panels/MobileDrawer";
+import { ConnectionModal } from "./components/panels/ConnectionModal";
 
 import {
   Settings,
@@ -26,21 +35,27 @@ import {
   PanelRightOpen,
   MessageSquare,
   Network,
-} from 'lucide-react';
-import clsx from 'clsx';
+} from "lucide-react";
+import clsx from "clsx";
 
 const getInitialWsUrl = (): string => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     const params = new URLSearchParams(window.location.search);
-    const wsParam = params.get('ws');
+    const wsParam = params.get("ws");
     if (wsParam) return wsParam;
-    const stored = localStorage.getItem('hermes_ws_url');
+    const stored =
+      localStorage.getItem("runtime_ws_url") ??
+      localStorage.getItem("hermes_ws_url");
     if (stored) return stored;
   }
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_HERMES_WS_URL) {
-    return import.meta.env.VITE_HERMES_WS_URL as string;
+  if (typeof import.meta !== "undefined" && import.meta.env) {
+    return (
+      (import.meta.env.VITE_RUNTIME_WS_URL as string | undefined) ??
+      (import.meta.env.VITE_HERMES_WS_URL as string | undefined) ??
+      "ws://127.0.0.1:8765/ws"
+    );
   }
-  return 'ws://localhost:8765/ws';
+  return "ws://127.0.0.1:8765/ws";
 };
 
 const eventBus = new HermesEventBus();
@@ -57,15 +72,38 @@ const layoutStore = new LayoutStore();
 const voiceController = new VoiceController(client, stateMachine);
 
 export const App: React.FC = () => {
-  const [connection, setConnection] = useState<ConnectionSnapshot>(connectionStore.getSnapshot());
-  const [constellation, setConstellation] = useState<ConstellationSnapshot>(constellationStore.getSnapshot());
-  const [agentState, setAgentState] = useState<StateMachineSnapshot>(stateMachine.getSnapshot());
+  const [connection, setConnection] = useState<ConnectionSnapshot>(
+    connectionStore.getSnapshot(),
+  );
+  const [constellation, setConstellation] = useState<ConstellationSnapshot>(
+    constellationStore.getSnapshot(),
+  );
+  const [agentState, setAgentState] = useState<StateMachineSnapshot>(
+    stateMachine.getSnapshot(),
+  );
   const [mode, setMode] = useState<ModeSnapshot>(modeStore.getSnapshot());
-  const [turns, setTurns] = useState<TranscriptTurn[]>(transcriptStore.getTurns());
+  const [turns, setTurns] = useState<TranscriptTurn[]>(
+    transcriptStore.getTurns(),
+  );
   const [tasks, setTasks] = useState<TaskNode[]>(taskTreeStore.getTasks());
-  const [layout, setLayout] = useState<LayoutSnapshot>(layoutStore.getSnapshot());
+  const [layout, setLayout] = useState<LayoutSnapshot>(
+    layoutStore.getSnapshot(),
+  );
   const [volume, setVolume] = useState<number>(0);
-  const [isPtt, setIsPtt] = useState<boolean>(voiceController.getIsPushToTalk());
+  const [micInputVolume, setMicInputVolume] = useState<number>(0);
+  const [micInputPeak, setMicInputPeak] = useState<number>(0);
+  const [playbackMetrics, setPlaybackMetrics] = useState<AudioPlaybackMetrics>(
+    voiceController.playbackQueue.getMetrics(),
+  );
+  const [receivedAudioFrames, setReceivedAudioFrames] = useState(0);
+  const [protocolParseErrors, setProtocolParseErrors] = useState(0);
+  const [bargeInStopLatencyMs, setBargeInStopLatencyMs] = useState<number | null>(null);
+  const [appliedAudioSettings, setAppliedAudioSettings] = useState<AppliedAudioSettings>({});
+  const [acousticInterruptionMetrics, setAcousticInterruptionMetrics] =
+    useState<AcousticInterruptionMetrics>(voiceController.getAcousticInterruptionMetrics());
+  const [isPtt, setIsPtt] = useState<boolean>(
+    voiceController.getIsPushToTalk(),
+  );
   const [isConnectionModalOpen, setIsConnectionModalOpen] = useState(false);
   const [currentWsUrl, setCurrentWsUrl] = useState<string>(initialWsUrl);
 
@@ -78,13 +116,29 @@ export const App: React.FC = () => {
     const unsubTasks = taskTreeStore.subscribe(setTasks);
     const unsubLayout = layoutStore.subscribe(setLayout);
     const unsubVol = voiceController.playbackQueue.onVolumeChange(setVolume);
+    const unsubPlaybackMetrics = voiceController.playbackQueue.onMetricsChange(setPlaybackMetrics);
+    const unsubAudioFrames = eventBus.onAudio(() => setReceivedAudioFrames((count) => count + 1));
+    const unsubParseErrors = eventBus.on("parse_error", () => setProtocolParseErrors((count) => count + 1));
+    const unsubBargeIn = voiceController.bargeInManager.onInterruption(() => {
+      setBargeInStopLatencyMs(voiceController.bargeInManager.getMetrics().lastLocalStopLatencyMs);
+    });
     const unsubMicVol = voiceController.onMicVolumeChange((vol) => {
+      setMicInputVolume(vol);
+      setMicInputPeak((peak) => Math.max(peak, vol));
       if (stateMachine.getSnapshot().isListening) {
         setVolume(vol);
       }
     });
+    const unsubPtt = voiceController.onPushToTalkModeChange(setIsPtt);
+    const unsubAudioSettings = voiceController.onAppliedAudioSettingsChange((settings) => {
+      setAppliedAudioSettings({ ...settings });
+    });
+    const unsubAcousticInterruption = voiceController.onAcousticInterruption(
+      setAcousticInterruptionMetrics,
+    );
 
     // Auto connect
+    voiceController.activate();
     client.connect();
 
     return () => {
@@ -96,7 +150,14 @@ export const App: React.FC = () => {
       unsubTasks();
       unsubLayout();
       unsubVol();
+      unsubPlaybackMetrics();
+      unsubAudioFrames();
+      unsubParseErrors();
+      unsubBargeIn();
       unsubMicVol();
+      unsubPtt();
+      unsubAudioSettings();
+      unsubAcousticInterruption();
       voiceController.dispose();
       client.disconnect();
     };
@@ -137,17 +198,38 @@ export const App: React.FC = () => {
 
   const handleUpdateWsUrl = (newUrl: string) => {
     setCurrentWsUrl(newUrl);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('hermes_ws_url', newUrl);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("runtime_ws_url", newUrl);
     }
     client.disconnect();
     client.connect(newUrl);
   };
 
-  const activeTaskCount = tasks.filter((t) => t.status === 'running').length;
+  const activeTaskCount = tasks.filter((t) => t.status === "running").length;
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-background text-slate-100 select-none overflow-hidden">
+    <div
+      className="flex flex-col h-screen w-screen bg-background text-slate-100 select-none overflow-hidden"
+      data-audio-chunks={playbackMetrics.chunksPlayed}
+      data-audio-rendered-frames={playbackMetrics.renderedFrames}
+      data-audio-underrun-frames={playbackMetrics.underrunFrames}
+      data-audio-overrun-frames={playbackMetrics.overrunFrames}
+      data-audio-received-frames={receivedAudioFrames}
+      data-protocol-parse-errors={protocolParseErrors}
+      data-barge-in-stop-latency-ms={bargeInStopLatencyMs?.toFixed(3) ?? ""}
+      data-mic-echo-cancellation={String(appliedAudioSettings.echoCancellation ?? "")}
+      data-mic-noise-suppression={String(appliedAudioSettings.noiseSuppression ?? "")}
+      data-mic-auto-gain-control={String(appliedAudioSettings.autoGainControl ?? "")}
+      data-mic-sample-rate={String(appliedAudioSettings.sampleRate ?? "")}
+      data-mic-channel-count={String(appliedAudioSettings.channelCount ?? "")}
+      data-mic-mode={appliedAudioSettings.echoCancellation === true ? "hands_free" : "push_to_talk"}
+      data-mic-rms={micInputVolume.toFixed(6)}
+      data-mic-peak={micInputPeak.toFixed(6)}
+      data-acoustic-interruptions={acousticInterruptionMetrics.totalAuthoritativeInterruptions}
+      data-acoustic-interrupt-stop-latency-ms={
+        acousticInterruptionMetrics.lastStopLatencyMs?.toFixed(3) ?? ""
+      }
+    >
       {/* Header bar */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-slate-800/80 bg-surface/60 backdrop-blur-md z-30 shrink-0">
         <div className="flex items-center gap-3">
@@ -156,7 +238,11 @@ export const App: React.FC = () => {
             type="button"
             onClick={() => layoutStore.toggleLeftPanel()}
             className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            title={layout.isLeftPanelOpen ? 'Collapse Transcripts' : 'Open Transcripts'}
+            title={
+              layout.isLeftPanelOpen
+                ? "Collapse Transcripts"
+                : "Open Transcripts"
+            }
           >
             {layout.isLeftPanelOpen ? (
               <PanelLeftClose className="w-4 h-4" />
@@ -166,7 +252,9 @@ export const App: React.FC = () => {
           </button>
 
           <div>
-            <h1 className="text-sm font-semibold text-white tracking-wide">Live Agent</h1>
+            <h1 className="text-sm font-semibold text-white tracking-wide">
+              Live Agent
+            </h1>
           </div>
         </div>
 
@@ -175,12 +263,12 @@ export const App: React.FC = () => {
           <div className="flex lg:hidden items-center gap-1.5">
             <button
               type="button"
-              onClick={() => layoutStore.setMobileDrawer('transcript')}
+              onClick={() => layoutStore.setMobileDrawer("transcript")}
               className={clsx(
-                'px-2.5 py-1 rounded-full text-xs font-medium border flex items-center gap-1 transition-colors',
+                "px-2.5 py-1 rounded-full text-xs font-medium border flex items-center gap-1 transition-colors",
                 turns.length > 0
-                  ? 'bg-slate-800 border-slate-700 text-slate-200'
-                  : 'bg-slate-900/60 border-slate-800 text-slate-500'
+                  ? "bg-slate-800 border-slate-700 text-slate-200"
+                  : "bg-slate-900/60 border-slate-800 text-slate-500",
               )}
             >
               <MessageSquare className="w-3.5 h-3.5 text-hermes" />
@@ -189,12 +277,12 @@ export const App: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => layoutStore.setMobileDrawer('tasks')}
+              onClick={() => layoutStore.setMobileDrawer("tasks")}
               className={clsx(
-                'px-2.5 py-1 rounded-full text-xs font-medium border flex items-center gap-1 transition-colors',
+                "px-2.5 py-1 rounded-full text-xs font-medium border flex items-center gap-1 transition-colors",
                 activeTaskCount > 0
-                  ? 'bg-blue-500/20 border-blue-500/40 text-blue-300 animate-pulse'
-                  : 'bg-slate-900/60 border-slate-800 text-slate-500'
+                  ? "bg-blue-500/20 border-blue-500/40 text-blue-300 animate-pulse"
+                  : "bg-slate-900/60 border-slate-800 text-slate-500",
               )}
             >
               <Network className="w-3.5 h-3.5 text-cyan-400" />
@@ -217,7 +305,7 @@ export const App: React.FC = () => {
             type="button"
             onClick={() => layoutStore.toggleRightPanel()}
             className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            title={layout.isRightPanelOpen ? 'Collapse Tasks' : 'Open Tasks'}
+            title={layout.isRightPanelOpen ? "Collapse Tasks" : "Open Tasks"}
           >
             {layout.isRightPanelOpen ? (
               <PanelRightClose className="w-4 h-4" />
@@ -275,7 +363,7 @@ export const App: React.FC = () => {
               isPushToTalk={isPtt}
               onTogglePtt={handleTogglePtt}
               onToggleListening={handleToggleListening}
-              disabled={connection.state !== 'connected'}
+              disabled={connection.state !== "connected"}
             />
           </footer>
         </main>
@@ -294,7 +382,7 @@ export const App: React.FC = () => {
 
       {/* Mobile Drawers */}
       <MobileDrawer
-        isOpen={layout.mobileDrawer === 'transcript'}
+        isOpen={layout.mobileDrawer === "transcript"}
         onClose={() => layoutStore.closeMobileDrawer()}
         title="Streaming Transcripts"
       >
@@ -302,7 +390,7 @@ export const App: React.FC = () => {
       </MobileDrawer>
 
       <MobileDrawer
-        isOpen={layout.mobileDrawer === 'tasks'}
+        isOpen={layout.mobileDrawer === "tasks"}
         onClose={() => layoutStore.closeMobileDrawer()}
         title="Multi-Agent Task Tree"
       >

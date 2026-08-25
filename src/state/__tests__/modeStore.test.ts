@@ -6,7 +6,7 @@ import { ModeStore } from '../modeStore';
 import seedData from '../../../test-fixtures/seed-data.json';
 
 describe('ModeStore & Direct Agent Mode (FEAT-010)', () => {
-  it('dispatches USER_TARGET to Hermes when entering and exiting Direct Agent Mode', () => {
+  it('dispatches USER_TARGET to a worker and the manifest orchestrator', () => {
     const bus = new HermesEventBus();
     const sentEvents: any[] = [];
     bus.on('client_event', (ev) => sentEvents.push(ev));
@@ -41,6 +41,6 @@ describe('ModeStore & Direct Agent Mode (FEAT-010)', () => {
 
     expect(sentEvents).toHaveLength(2);
     expect(sentEvents[1].type).toBe('USER_TARGET');
-    expect(sentEvents[1].targetAgentId).toBe('hermes');
+    expect(sentEvents[1].targetAgentId).toBe('local-supervisor');
   });
 });

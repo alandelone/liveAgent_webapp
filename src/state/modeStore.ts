@@ -1,6 +1,6 @@
-import { AgentDescriptor } from '../types/protocol';
-import { HermesClient } from '../protocol/HermesClient';
-import { ManifestStore } from './manifestStore';
+import { AgentDescriptor } from "../types/protocol";
+import { HermesClient } from "../protocol/HermesClient";
+import { ManifestStore } from "./manifestStore";
 
 export interface ModeSnapshot {
   isDirectMode: boolean;
@@ -16,20 +16,21 @@ export class ModeStore {
 
   constructor(
     private client: HermesClient,
-    private manifestStore: ManifestStore
+    private manifestStore: ManifestStore,
   ) {
     this.manifestStore.subscribe(() => this.notify());
   }
 
   public setTargetAgent(agentId: string | null): void {
-    if (agentId === 'hermes' || !agentId) {
+    const orchestratorId = this.manifestStore.getOrchestrator()?.id;
+    if (!agentId || agentId === orchestratorId) {
       this.clearTargetAgent();
       return;
     }
 
     this.targetAgentId = agentId;
     this.client.sendEvent({
-      type: 'USER_TARGET',
+      type: "USER_TARGET",
       sessionId: this.client.getSessionId(),
       targetAgentId: agentId,
     });
@@ -38,18 +39,26 @@ export class ModeStore {
 
   public clearTargetAgent(): void {
     this.targetAgentId = null;
+    const orchestrator = this.manifestStore.getOrchestrator();
+    if (!orchestrator) {
+      throw new Error(
+        "Cannot clear direct mode without an orchestrator manifest entry",
+      );
+    }
     this.client.sendEvent({
-      type: 'USER_TARGET',
+      type: "USER_TARGET",
       sessionId: this.client.getSessionId(),
-      targetAgentId: 'hermes',
+      targetAgentId: orchestrator.id,
     });
     this.notify();
   }
 
   public getSnapshot(): ModeSnapshot {
-    const isDirectMode = this.targetAgentId !== null && this.targetAgentId !== 'hermes';
+    const isDirectMode =
+      this.targetAgentId !== null &&
+      this.targetAgentId !== this.manifestStore.getOrchestrator()?.id;
     const targetAgent = this.targetAgentId
-      ? this.manifestStore.getAgentById(this.targetAgentId) ?? null
+      ? (this.manifestStore.getAgentById(this.targetAgentId) ?? null)
       : null;
 
     return {
@@ -73,7 +82,7 @@ export class ModeStore {
       try {
         listener(snap);
       } catch (err) {
-        console.error('[ModeStore] Error in listener:', err);
+        console.error("[ModeStore] Error in listener:", err);
       }
     });
   }

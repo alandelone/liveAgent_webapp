@@ -1,0 +1,53 @@
+﻿{
+    "schemaVersion":  1,
+    "startedAt":  "2026-08-25T13:38:49.7605471Z",
+    "distribution":  "Debian",
+    "before":  {
+                   "status":  "running",
+                   "checks":  {
+                                  "tts":  true,
+                                  "ui":  true,
+                                  "gpuIsolation":  true,
+                                  "gateway":  true
+                              },
+                   "state":  {
+                                 "status":  "running",
+                                 "startedAt":  "2026-08-25T13:18:48.0701388Z",
+                                 "distribution":  "Debian",
+                                 "ttsEndpoint":  "http://172.17.176.1:8771",
+                                 "ttsDevice":  "cpu",
+                                 "ttsPid":  900,
+                                 "gatewayWindowsPid":  39560,
+                                 "vitePid":  24560,
+                                 "uiMode":  "production-preview"
+                             }
+               },
+    "recoveredCapacity":  {
+                              "freePhysicalGiB":  13.737,
+                              "freeCommitGiB":  11.777,
+                              "asrEngines":  0
+                          },
+    "after":  {
+                  "status":  "running",
+                  "checks":  {
+                                 "tts":  true,
+                                 "ui":  true,
+                                 "gpuIsolation":  true,
+                                 "gateway":  true
+                             },
+                  "state":  {
+                                "status":  "running",
+                                "startedAt":  "2026-08-25T13:40:42.8730373Z",
+                                "distribution":  "Debian",
+                                "ttsEndpoint":  "http://172.17.176.1:8771",
+                                "ttsDevice":  "cpu",
+                                "ttsPid":  14332,
+                                "gatewayWindowsPid":  7548,
+                                "vitePid":  31304,
+                                "uiMode":  "production-preview"
+                            }
+              },
+    "runtimeSafetyTests":  "pass",
+    "status":  "pass",
+    "finishedAt":  "2026-08-25T13:40:44.2996286Z"
+}

@@ -2,7 +2,7 @@
 
 **Design baseline for RTX 4070 Ti 12GB**
 
-**Status:** Target architecture and migration/benchmark plan; not the current implementation
+**Status:** FEAT-014 through FEAT-026 verified; full-duplex TTS/playback implementation and hardware verification in progress
 **Primary goals:** low latency, operational stability, cost sensitivity, and natural Chinese-English code-switching
 
 ## 1. Executive decision
@@ -15,15 +15,11 @@ The **Qwen3-ASR family is selected**, with **Qwen3-ASR 1.7B as the initial test 
 
 The system should maintain VRAM and compute headroom for overlapping ASR, routing, buffering, and voice output. GPU utilization is an observed constraint, not the objective.
 
-### 1.1 Verified current-state gap
+### 1.1 Verified current state
 
-As verified in the repository on 2026-08-24, this document describes a target migration rather than an already connected voice pipeline:
+The primary browser path now captures framed PCM through AudioWorklet, the Runtime runs bounded ingestion plus authoritative VAD/ASR, and all final text enters the deterministic-policy/Local-Supervisor/scheduler boundary. FEAT-014 through FEAT-026 have evaluator proof. The Phase 6 implementation adds strict correlated TTS markers, real downstream float32 PCM, a revisioned Response Coordinator, and AudioWorklet ring-buffer playback; its live Qwen TTS, audible-browser, and acoustic evidence must pass before FEAT-027 through FEAT-029 are marked complete.
 
-- [`src/audio/voiceController.ts`](../src/audio/voiceController.ts) uses browser `SpeechRecognition`/`webkitSpeechRecognition` for transcription and an `AnalyserNode` for UI volume. It does not currently capture PCM through an AudioWorklet or call `HermesClient.sendAudio`.
-- [`server.py`](../server.py) accepts binary WebSocket messages but currently discards them. It has no Silero VAD or Qwen3-ASR inference path.
-- [`src/audio/audioPlaybackQueue.ts`](../src/audio/audioPlaybackQueue.ts) simulates chunk timing and RMS for tests/UI; it does not produce audible playback. The current server emits TTS start/end markers and text deltas but no binary TTS audio.
-
-Consequently, first-audio latency, acoustic echo behavior, real barge-in, VAD quality, and GPU overlap cannot yet be measured end to end. Browser PCM capture, server audio ingestion, model serving, real TTS generation, and real browser playback are implementation prerequisites, not existing capabilities.
+The selected official TTS candidate is `Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice` revision `85e237c12c027371202489a0ec509ded67b5e4b5`. Its current high-level API generates complete waveforms even when its simulated streaming-input flag is used, so the initial integration synthesizes bounded clauses and then streams PCM. This distinction is deliberate and testable.
 
 ## 2. Goals and non-goals
 
@@ -82,7 +78,7 @@ Co-residency on 12 GB VRAM is a hypothesis to test, not an established fact. Rec
 
 ### 3.3 Control path
 
-Commands such as `stop speaking`, `cancel task`, `continue`, `status`, and `repeat` should first pass through a deterministic command recognizer and state machine. `Stop speaking` or a barge-in interrupts only the current response/TTS turn. `Cancel task` targets an explicit foreground or background job and may propagate to cancellable child jobs. A bare `stop` or `cancel` must be resolved from the active state only when the target is unambiguous; otherwise ask a short clarification. The Supervisor handles ambiguity, not the obvious cases. This reduces latency and prevents a generative model from overriding control semantics.
+Commands such as `听我说` / `stop speaking`, `cancel task`, `continue`, `status`, and `repeat` should first pass through a deterministic command recognizer and state machine. `听我说`, `stop speaking`, or a barge-in interrupts only the current response/TTS turn. `Cancel task` targets an explicit foreground or background job and may propagate to cancellable child jobs. A bare `stop` or `cancel` must be resolved from the active state only when the target is unambiguous; otherwise ask a short clarification. The Supervisor handles ambiguity, not the obvious cases. This reduces latency and prevents a generative model from overriding control semantics.
 
 ### 3.4 Recommended logical roles
 

@@ -48,7 +48,7 @@ describe('Deterministic MockHermesServer (FEAT-003)', () => {
     });
 
     expect(receivedEvents[0].type).toBe('AGENT_MANIFEST');
-    expect(receivedEvents[0].agents).toHaveLength(5);
+    expect(receivedEvents[0].agents).toHaveLength(6);
     expect(receivedEvents[1].type).toBe('STT_FINAL');
     expect(receivedEvents[2].type).toBe('TEXT_DELTA');
 

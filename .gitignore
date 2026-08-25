@@ -10,3 +10,6 @@ __pycache__
 *$py.class
 .DS_Store
 *.log
+.tools/
+.runtime-data/
+.model-cache/

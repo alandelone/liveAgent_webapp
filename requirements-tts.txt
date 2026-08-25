@@ -1,0 +1,5 @@
+# Kept in /opt/livechat-agent/.venv-tts because qwen-tts pins a different
+# Transformers patch release than the ASR/vLLM environment.
+qwen-tts==0.1.1
+torch==2.13.0
+torchaudio==2.11.0

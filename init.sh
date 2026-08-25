@@ -1,39 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "========================================================"
-echo "  🚀 Bootstrapping livechat_agent Deterministic Sandbox "
-echo "========================================================"
+required_node_major=24
 
-# 1. Check Node.js and NPM
-if command -v node >/dev/null 2>&1; then
-  echo "[✓] Node.js $(node -v) detected."
-else
-  echo "[!] Node.js not found. Please install Node.js >= 18."
-fi
-
-# 2. Verify deterministic test fixtures
-if [ -f "test-fixtures/seed-data.json" ]; then
-  echo "[✓] Deterministic test fixtures verified (test-fixtures/seed-data.json)."
-else
-  echo "[✕] ERROR: test-fixtures/seed-data.json missing!"
+if ! command -v node >/dev/null 2>&1; then
+  echo "ERROR: Node.js 24.19.0 or newer is required." >&2
   exit 1
 fi
 
-# 3. Verify stage-gates and repository structure
-echo "[*] Checking repository invariants and stage gates..."
-for gate in "01-discovery-brief.md" "02-tech-design.md" "03-execution-brief.md" "04-verification-report.md"; do
-  if [ -f "stage-gates/$gate" ]; then
-    echo "    - stage-gates/$gate [OK]"
+node_major="$(node --version | sed -E 's/^v([0-9]+).*/\1/')"
+if [[ "${node_major}" -lt "${required_node_major}" ]]; then
+  echo "ERROR: Node $(node --version) is unsupported; use Node 24.19.0 or newer." >&2
+  exit 1
+fi
+
+for required_file in \
+  test-fixtures/seed-data.json \
+  test-fixtures/v0.2/manifest.json \
+  stage-gates/01-discovery-brief.md \
+  stage-gates/02-tech-design.md \
+  stage-gates/03-execution-brief.md \
+  stage-gates/04-verification-report.md; do
+  if [[ ! -f "${required_file}" ]]; then
+    echo "ERROR: required repository file is missing: ${required_file}" >&2
+    exit 1
   fi
 done
 
-# 4. Install dependencies if package.json exists
-if [ -f "package.json" ]; then
-  echo "[*] Installing project dependencies..."
-  npm install
-fi
+npm ci
+npm run test:all
+npm run lint
+npm run build
 
-echo "========================================================"
-echo "  [✓] livechat_agent sandbox initialized successfully! "
-echo "========================================================"
+echo "livechat_agent deterministic sandbox initialized successfully."

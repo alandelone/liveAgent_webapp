@@ -11,11 +11,11 @@ describe('ManifestStore & ConstellationStore (FEAT-004)', () => {
 
     bus.handleRawMessage(seedData.manifest);
 
-    expect(manifestStore.getAgents()).toHaveLength(5);
+    expect(manifestStore.getAgents()).toHaveLength(6);
     const orchestrator = manifestStore.getOrchestrator();
     expect(orchestrator).toBeDefined();
-    expect(orchestrator?.id).toBe('hermes');
-    expect(manifestStore.getSideAgents()).toHaveLength(4);
+    expect(orchestrator?.id).toBe('local-supervisor');
+    expect(manifestStore.getSideAgents()).toHaveLength(5);
   });
 
   it('manages active constellation dynamically based on state and delegation tasks', () => {
@@ -26,18 +26,18 @@ describe('ManifestStore & ConstellationStore (FEAT-004)', () => {
     bus.handleRawMessage(seedData.manifest);
 
     let snapshot = constellationStore.getSnapshot();
-    expect(snapshot.orchestrator?.id).toBe('hermes');
+    expect(snapshot.orchestrator?.id).toBe('local-supervisor');
     expect(snapshot.orchestratorState).toBe('idle');
-    // Initially all 4 side agents are dormant
+    // Initially all 5 side agents are dormant
     expect(snapshot.activeSatellites).toHaveLength(0);
-    expect(snapshot.dormantSatellites).toHaveLength(4);
+    expect(snapshot.dormantSatellites).toHaveLength(5);
 
-    // Hermes delegates a task to research agent
+    // Local Supervisor delegates a task to research agent
     bus.handleRawMessage({
       type: 'TASK_START',
       seq: 12,
       taskId: 'task-501',
-      fromAgentId: 'hermes',
+      fromAgentId: 'local-supervisor',
       toAgentId: 'research',
       taskName: 'Scan documentation in /docs',
     });

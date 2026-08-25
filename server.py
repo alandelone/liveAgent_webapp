@@ -1,320 +1,262 @@
+from __future__ import annotations
+
 import asyncio
 import json
 import os
-import subprocess
 import time
+
 import websockets
 
-PORT = 8765
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), "subagents.config.json")
-HERMES_PROFILES_DIR = os.path.expanduser(r"~\AppData\Local\hermes\profiles")
+from runtime.asr import create_asr_adapter
+from runtime.audio_ingress import AudioBackpressure, InvalidAudioFrame
+from runtime.orchestrator import LocalOrchestrator
+from runtime.scheduler import AgentRegistry
+from runtime.supervisor import DeterministicSupervisor, QwenSupervisorAdapter
+from runtime.tts import DeterministicTtsAdapter, DisabledTtsAdapter, LoopbackKokoroTtsAdapter, LoopbackTtsAdapter, LoopbackQwenTtsAdapter
+from runtime.vad import EnergyProbabilityAdapter, SileroProbabilityAdapter, StreamingVad
+from runtime.voice_session import VoiceSession
 
-def infer_agent_visuals(profile_name: str, soul_text: str = ""):
-    """Infer appropriate theme color and icon based on profile name or persona."""
-    lower = f"{profile_name} {soul_text}".lower()
-    if any(k in lower for k in ["code", "dev", "program", "engineer", "build"]):
-        return {"color": "#3B82F6", "icon": "code"}
-    elif any(k in lower for k in ["research", "search", "wiki", "paper", "arxiv", "doc"]):
-        return {"color": "#A855F7", "icon": "book-open"}
-    elif any(k in lower for k in ["qa", "test", "audit", "verify", "shield", "security"]):
-        return {"color": "#10B981", "icon": "shield"}
-    elif any(k in lower for k in ["browser", "web", "crawl", "scrape", "net"]):
-        return {"color": "#F59E0B", "icon": "globe"}
-    elif any(k in lower for k in ["design", "ui", "ux", "art", "draw", "creative"]):
-        return {"color": "#EC4899", "icon": "palette"}
-    elif any(k in lower for k in ["data", "db", "sql", "analysis", "table"]):
-        return {"color": "#06B6D4", "icon": "database"}
-    elif any(k in lower for k in ["auto", "agv", "bot", "tool", "task"]):
-        return {"color": "#EAB308", "icon": "cpu"}
-    else:
-        return {"color": "#6366F1", "icon": "cpu"}
 
-def scan_hermes_profiles():
-    """Scan real Hermes profiles directory for live sub-agents."""
-    discovered = []
-    if os.path.isdir(HERMES_PROFILES_DIR):
-        for entry in sorted(os.listdir(HERMES_PROFILES_DIR)):
-            p_dir = os.path.join(HERMES_PROFILES_DIR, entry)
-            if os.path.isdir(p_dir):
-                soul_path = os.path.join(p_dir, "SOUL.md")
-                soul_content = ""
-                if os.path.exists(soul_path):
-                    try:
-                        with open(soul_path, "r", encoding="utf-8") as sf:
-                            soul_content = sf.read(500)
-                    except Exception:
-                        pass
-                
-                visuals = infer_agent_visuals(entry, soul_content)
-                name = entry.replace("_", " ").replace("-", " ").title()
-                discovered.append({
-                    "id": entry,
-                    "name": name,
-                    "profile": entry,
-                    "color": visuals["color"],
-                    "icon": visuals["icon"],
-                    "enabled": True
-                })
-    return discovered
+PORT = int(os.environ.get("RUNTIME_PORT", "8765"))
 
-def load_agent_manifest():
-    """Load and dynamically synchronize sub-agents from Hermes profiles and config."""
-    manifest = [
-        {"id": "hermes", "name": "Orchestrator", "color": "#6366F1", "icon": "brain", "isOrchestrator": True}
-    ]
-    
-    # 1. Scan real profiles from Hermes filesystem
-    real_profiles = scan_hermes_profiles()
-    
-    # 2. Read config overrides (max limit, custom visual styling, whitelist)
-    max_agents = 4
-    config_overrides = {}
-    fallback_subagents = []
-    
-    if os.path.exists(CONFIG_PATH):
-        try:
-            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-                max_agents = cfg.get("max_visible_subagents", 4)
-                fallback_subagents = cfg.get("subagents", [])
-                for s in fallback_subagents:
-                    config_overrides[s.get("id")] = s
-        except Exception as e:
-            print(f"[Server] Error loading subagents config: {e}")
 
-    # Combine real profiles or fallback profiles
-    combined_pool = []
-    if real_profiles:
-        for rp in real_profiles:
-            override = config_overrides.get(rp["id"], {})
-            if override.get("enabled", True):
-                combined_pool.append({
-                    "id": rp["id"],
-                    "name": override.get("name", rp["name"]),
-                    "profile": rp["profile"],
-                    "color": override.get("color", rp["color"]),
-                    "icon": override.get("icon", rp["icon"]),
-                })
-    else:
-        # If no profile folders created in Hermes yet, use config entries
-        for s in fallback_subagents:
-            if s.get("enabled", True):
-                combined_pool.append({
-                    "id": s["id"],
-                    "name": s["name"],
-                    "profile": s.get("profile", s["id"]),
-                    "color": s.get("color", "#3B82F6"),
-                    "icon": s.get("icon", "cpu"),
-                })
+def create_vad() -> StreamingVad:
+    backend = os.environ.get("RUNTIME_VAD_BACKEND", "energy").lower()
+    if backend == "silero":
+        return StreamingVad(SileroProbabilityAdapter())
+    if backend == "energy":
+        return StreamingVad(EnergyProbabilityAdapter())
+    raise ValueError(f"unsupported RUNTIME_VAD_BACKEND: {backend}")
 
-    # Limit to max_visible_subagents
-    selected = combined_pool[:max_agents]
-    for s in selected:
-        manifest.append({
-            "id": s["id"],
-            "name": s["name"],
-            "color": s["color"],
-            "icon": s["icon"],
-            "isOrchestrator": False
-        })
-        
-    return manifest
 
-def run_hermes_query(prompt: str, profile: str = None) -> str:
-    """Execute query via Hermes CLI against the main orchestrator or a specific profile."""
-    try:
-        cmd = ["hermes"]
-        if profile and os.path.isdir(os.path.join(HERMES_PROFILES_DIR, profile)):
-            cmd.extend(["--profile", profile])
-        cmd.extend(["-z", prompt])
-        
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60, encoding='utf-8')
-        if result.returncode == 0 and result.stdout.strip():
-            return result.stdout.strip()
-        return result.stdout.strip() or result.stderr.strip() or "I processed your request."
-    except Exception as e:
-        return f"Response error: {e}"
+def create_supervisor(registry: AgentRegistry):
+    backend = os.environ.get("RUNTIME_SUPERVISOR_BACKEND", "deterministic").lower()
+    if backend == "qwen":
+        if os.environ.get("RUNTIME_ASR_BACKEND", "fake").lower() == "qwen":
+            raise ValueError("target-host evidence forbids concurrent qwen ASR and qwen Supervisor in one profile")
+        return QwenSupervisorAdapter(
+            quantization=os.environ.get("RUNTIME_SUPERVISOR_QUANTIZATION", "nf4").lower(),
+            device=os.environ.get("RUNTIME_SUPERVISOR_DEVICE", "cuda").lower(),
+            model_path=os.environ.get("RUNTIME_SUPERVISOR_MODEL_PATH") or None,
+            allowed_roles=registry.roles,
+        )
+    if backend == "deterministic":
+        return DeterministicSupervisor(registry.roles)
+    raise ValueError(f"unsupported RUNTIME_SUPERVISOR_BACKEND: {backend}")
 
-async def handler(websocket):
-    print(f"[Server] Client connected from {websocket.remote_address}")
+
+def create_tts():
+    backend = os.environ.get("RUNTIME_TTS_BACKEND", "disabled").lower()
+    if backend == "disabled":
+        return DisabledTtsAdapter()
+    if backend == "deterministic":
+        return DeterministicTtsAdapter(duration_ms=int(os.environ.get("RUNTIME_DETERMINISTIC_TTS_DURATION_MS", "240")))
+    if backend == "qwen-loopback":
+        if os.environ.get("RUNTIME_ASR_BACKEND", "fake").lower() == "qwen" and os.environ.get("RUNTIME_TTS_ASR_CORESIDENCY_VERIFIED", "false").lower() != "true":
+            raise ValueError("qwen ASR plus qwen TTS remains disabled until target-host co-residency evidence passes")
+        return LoopbackQwenTtsAdapter(os.environ.get("RUNTIME_TTS_ENDPOINT", "http://127.0.0.1:8770"))
+    if backend == "kokoro-loopback":
+        return LoopbackKokoroTtsAdapter(os.environ.get("RUNTIME_TTS_ENDPOINT", "http://127.0.0.1:8771"))
+    raise ValueError(f"unsupported RUNTIME_TTS_BACKEND: {backend}")
+
+
+def load_agent_manifest() -> list[dict[str, object]]:
+    """Return stable logical roles; a role does not imply one resident model."""
+    return AgentRegistry.default().public_manifest()
+
+
+def get_orchestrator_id(manifest: list[dict[str, object]]) -> str:
+    orchestrators = [str(agent["id"]) for agent in manifest if agent.get("isOrchestrator")]
+    if len(orchestrators) != 1:
+        raise RuntimeError(f"Manifest must contain exactly one orchestrator; received {len(orchestrators)}")
+    return orchestrators[0]
+
+
+async def handler(websocket) -> None:
+    print(f"[Local Runtime] Client connected from {websocket.remote_address}")
     seq = 1
     session_id = "sess_001"
-    target_agent_id = None
+    target_agent_id: str | None = None
+    protocol_version: int | None = None
+    voice_session: VoiceSession | None = None
+    registry = AgentRegistry.default()
+    send_lock = asyncio.Lock()
+    turn_tasks: set[asyncio.Task] = set()
 
-    async def send_event(event_dict):
+    async def send_event(event: dict) -> None:
         nonlocal seq
-        event_dict.setdefault("seq", seq)
-        event_dict.setdefault("sessionId", session_id)
-        event_dict.setdefault("timestamp", int(time.time() * 1000))
-        seq += 1
-        payload = json.dumps(event_dict)
-        await websocket.send(payload)
+        async with send_lock:
+            event.setdefault("seq", seq)
+            event.setdefault("sessionId", session_id)
+            event.setdefault("timestamp", int(time.time() * 1000))
+            seq += 1
+            await websocket.send(json.dumps(event))
+
+    async def send_binary(payload: bytes) -> None:
+        async with send_lock:
+            await websocket.send(payload)
+
+    def start_turn(coroutine) -> None:
+        async def guarded_turn() -> None:
+            try:
+                await coroutine
+            except Exception:
+                try:
+                    await send_event({"type": "ERROR", "code": "TURN_FAILED", "message": "The turn failed safely; retry with text if needed.", "recoverable": True})
+                except websockets.ConnectionClosed:
+                    pass
+
+        task = asyncio.create_task(guarded_turn())
+        turn_tasks.add(task)
+        task.add_done_callback(turn_tasks.discard)
+
+    # First-release deployment keeps Hermes disabled because CLI one-shot mode
+    # can auto-bypass tool approvals. The bounded adapter remains injectable at
+    # this boundary after a separate read-only transport is audited.
+    hermes = None
+    orchestrator = LocalOrchestrator(
+        send_event,
+        emit_binary=send_binary,
+        tts=create_tts(),
+        response_chunk_delay_s=float(os.environ.get("RUNTIME_TTS_CHUNK_DELAY_MS", "0")) / 1000,
+        registry=registry,
+        supervisor=create_supervisor(registry),
+        hermes=hermes,
+    )
+
+    async def emit_voice_event(event: dict) -> None:
+        if event.get("type") == "USER_SPEECH_START":
+            # Publish the authoritative VAD boundary first so clients can
+            # measure boundary-to-stop latency against the following
+            # response-scoped TTS_END(INTERRUPTED) marker.
+            await send_event(event)
+            if orchestrator.responses.is_active:
+                await orchestrator.interrupt_response(f"vad-{event.get('turnId', seq)}")
+            return
+        await send_event(event)
+        if event.get("type") == "STT_FINAL" and event.get("text"):
+            start_turn(
+                orchestrator.handle_turn(
+                    session_id,
+                    str(event.get("turnId")),
+                    str(event.get("text")),
+                    target_agent_id=target_agent_id,
+                )
+            )
 
     try:
         async for message in websocket:
             if isinstance(message, bytes):
-                # Binary audio frames
+                if protocol_version != 2:
+                    await send_event({"type": "ERROR", "code": "UNSUPPORTED_PROTOCOL_CAPABILITY", "message": "Binary audio requires protocol version 2.", "recoverable": True})
+                elif voice_session is None:
+                    await send_event({"type": "ERROR", "code": "INVALID_AUDIO_FRAME", "message": "Binary audio requires an active CAPTURE_START.", "recoverable": True})
+                else:
+                    try:
+                        voice_session.accept_audio(message)
+                    except (InvalidAudioFrame, AudioBackpressure) as exc:
+                        await send_event({"type": "ERROR", "code": "AUDIO_BACKPRESSURE" if isinstance(exc, AudioBackpressure) else "INVALID_AUDIO_FRAME", "message": str(exc), "recoverable": True})
+                        if isinstance(exc, AudioBackpressure):
+                            await voice_session.close()
                 continue
 
             try:
                 data = json.loads(message)
-            except Exception:
+            except (json.JSONDecodeError, TypeError):
+                await send_event({"type": "ERROR", "code": "INVALID_JSON", "message": "Client event must be valid JSON.", "recoverable": True})
                 continue
+            message_type = data.get("type")
 
-            msg_type = data.get("type")
-
-            if msg_type == "PING":
+            if message_type == "PING":
                 await websocket.send(json.dumps({"type": "PONG", "timestamp": data.get("timestamp")}))
                 continue
 
-            if msg_type == "CLIENT_HELLO":
-                session_id = data.get("sessionId", session_id)
-                manifest = load_agent_manifest()
-                sub_count = len(manifest) - 1
-                print(f"[Server] Handshake received. Synchronized {sub_count} sub-agents from Hermes profiles.")
-                await send_event({
-                    "type": "AGENT_MANIFEST",
-                    "agents": manifest,
-                })
-                await send_event({
-                    "type": "AGENT_STATE",
-                    "agentId": "hermes",
-                    "state": "idle",
-                })
+            if message_type == "CLIENT_HELLO":
+                requested_version = data.get("protocolVersion")
+                if requested_version not in (1, 2):
+                    await send_event({"type": "ERROR", "code": "UNSUPPORTED_PROTOCOL_VERSION", "message": f"Supported protocol versions are 1 (text only) and 2; received {requested_version}.", "recoverable": False})
+                    await websocket.close(code=4002, reason="Unsupported protocol version")
+                    break
+                protocol_version = requested_version
+                session_id = str(data.get("sessionId", session_id))
+                if requested_version == 2:
+                    voice_session = VoiceSession(session_id, create_vad(), create_asr_adapter(), emit_voice_event)
+                await send_event({"type": "AGENT_MANIFEST", "agents": registry.public_manifest()})
+                await send_event({"type": "AGENT_STATE", "agentId": registry.orchestrator.id, "state": "idle"})
                 continue
 
-            if msg_type == "USER_TARGET":
-                target_agent_id = data.get("targetAgentId")
-                print(f"[Server] Direct mode targeted agent: {target_agent_id}")
+            if protocol_version is None:
+                await send_event({"type": "ERROR", "code": "HANDSHAKE_REQUIRED", "message": "CLIENT_HELLO is required first.", "recoverable": True})
                 continue
 
-            if msg_type == "USER_TEXT":
-                turn_id = data.get("turnId", f"turn_{int(time.time())}")
-                user_text = data.get("text", "")
-                print(f"[Server] User prompt: {user_text}")
+            if message_type == "CAPTURE_START":
+                if protocol_version != 2 or voice_session is None:
+                    await send_event({"type": "ERROR", "code": "UNSUPPORTED_PROTOCOL_CAPABILITY", "message": "CAPTURE_START requires protocol version 2.", "recoverable": True})
+                else:
+                    try:
+                        await voice_session.start_capture(str(data.get("captureId", "")), data.get("format", {}))
+                    except InvalidAudioFrame as exc:
+                        await send_event({"type": "ERROR", "code": "INVALID_AUDIO_FRAME", "message": str(exc), "recoverable": True})
+                continue
 
-                # 1. Echo STT_FINAL with exact user words
-                await send_event({
-                    "type": "STT_FINAL",
-                    "turnId": turn_id,
-                    "text": user_text,
-                })
+            if message_type == "CAPTURE_END":
+                if protocol_version != 2 or voice_session is None:
+                    await send_event({"type": "ERROR", "code": "UNSUPPORTED_PROTOCOL_CAPABILITY", "message": "CAPTURE_END requires protocol version 2.", "recoverable": True})
+                else:
+                    try:
+                        await voice_session.end_capture(str(data.get("captureId", "")))
+                    except InvalidAudioFrame as exc:
+                        await send_event({"type": "ERROR", "code": "INVALID_AUDIO_FRAME", "message": str(exc), "recoverable": True})
+                continue
 
-                # 2. State: thinking
-                await send_event({
-                    "type": "AGENT_STATE",
-                    "agentId": "hermes",
-                    "state": "thinking",
-                    "detail": "Processing with Hermes...",
-                })
+            if message_type == "USER_TARGET":
+                requested_target = data.get("targetAgentId")
+                if requested_target == registry.orchestrator.id:
+                    target_agent_id = None
+                elif requested_target in registry.roles:
+                    target_agent_id = str(requested_target)
+                else:
+                    target_agent_id = None
+                    await send_event({"type": "ERROR", "code": "INVALID_AGENT_TARGET", "message": "Requested worker is not in the active manifest.", "recoverable": True})
+                continue
 
-                # 3. Dynamic Task Delegation
-                active_subagent = target_agent_id
-                manifest = load_agent_manifest()
-                subagent_ids = [a["id"] for a in manifest if not a.get("isOrchestrator")]
+            if message_type == "USER_TEXT":
+                turn_id = str(data.get("turnId", f"turn_{int(time.time() * 1000)}"))
+                user_text = str(data.get("text", "")).strip()
+                if not user_text:
+                    await send_event({"type": "ERROR", "code": "EMPTY_USER_TEXT", "message": "Text input cannot be empty.", "recoverable": True})
+                    continue
+                await send_event({"type": "STT_FINAL", "turnId": turn_id, "text": user_text})
+                start_turn(orchestrator.handle_turn(session_id, turn_id, user_text, target_agent_id=target_agent_id))
+                continue
 
-                if not active_subagent and subagent_ids:
-                    lower_text = user_text.lower()
-                    for sid in subagent_ids:
-                        if sid in lower_text:
-                            active_subagent = sid
-                            break
+            if message_type == "USER_INTERRUPT":
+                await orchestrator.interrupt_response(str(data.get("commandId", f"interrupt-{seq}")))
+                continue
 
-                if active_subagent and active_subagent in subagent_ids:
-                    task_id = f"task_{int(time.time())}"
-                    await send_event({
-                        "type": "TASK_START",
-                        "taskId": task_id,
-                        "fromAgentId": "hermes",
-                        "toAgentId": active_subagent,
-                        "taskName": f"Delegated to {active_subagent}",
-                    })
-                    await send_event({
-                        "type": "AGENT_STATE",
-                        "agentId": active_subagent,
-                        "state": "executing",
-                        "detail": f"{active_subagent} active",
-                    })
-                    await asyncio.sleep(0.3)
-                    await send_event({
-                        "type": "TASK_COMPLETE",
-                        "taskId": task_id,
-                        "agentId": active_subagent,
-                        "resultSummary": f"Processed by {active_subagent}",
-                    })
-                    await send_event({
-                        "type": "AGENT_STATE",
-                        "agentId": active_subagent,
-                        "state": "idle",
-                    })
-
-                # 4. Generate real response via Hermes
-                loop = asyncio.get_running_loop()
-                response_text = await loop.run_in_executor(
-                    None, 
-                    run_hermes_query, 
-                    user_text, 
-                    active_subagent if (active_subagent and active_subagent != "hermes") else None
-                )
-
-                # 5. State: speaking
-                await send_event({
-                    "type": "AGENT_STATE",
-                    "agentId": "hermes",
-                    "state": "speaking",
-                })
-                await send_event({
-                    "type": "TTS_START",
-                    "agentId": "hermes",
-                    "turnId": turn_id,
-                })
-
-                # Stream response text chunks
-                words = response_text.split(" ")
-                for idx, word in enumerate(words):
-                    chunk = word + (" " if idx < len(words) - 1 else "")
-                    await send_event({
-                        "type": "TEXT_DELTA",
-                        "agentId": "hermes",
-                        "turnId": turn_id,
-                        "delta": chunk,
-                        "isFinal": (idx == len(words) - 1),
-                    })
-                    await asyncio.sleep(0.02)
-
-                await send_event({
-                    "type": "TTS_END",
-                    "agentId": "hermes",
-                    "turnId": turn_id,
-                })
-
-                # Back to idle
-                await send_event({
-                    "type": "AGENT_STATE",
-                    "agentId": "hermes",
-                    "state": "idle",
-                })
-
-            if msg_type == "USER_SPEECH_START":
-                turn_id = data.get("turnId", f"turn_{int(time.time())}")
-                await send_event({
-                    "type": "AGENT_STATE",
-                    "agentId": "hermes",
-                    "state": "listening",
-                })
-
-            if msg_type == "USER_SPEECH_END":
-                # User speech ended; voiceController sends exact USER_TEXT once speech recognition completes
-                pass
+            if message_type == "TASK_CANCEL":
+                await orchestrator.cancel_task(str(data.get("taskId", "")), str(data.get("commandId", f"cancel-{seq}")))
+                continue
 
     except websockets.ConnectionClosed:
-        print(f"[Server] Client disconnected: {websocket.remote_address}")
+        print(f"[Local Runtime] Client disconnected: {websocket.remote_address}")
+    finally:
+        orchestrator.responses.abandon()
+        if voice_session is not None:
+            await voice_session.close()
 
-async def main():
-    print(f"[Hermes Voice Server] Starting WebSocket server on ws://127.0.0.1:{PORT} ...")
+
+async def main() -> None:
+    tts_probe = create_tts()
+    if isinstance(tts_probe, LoopbackTtsAdapter):
+        await tts_probe.healthcheck()
+    asr_probe = create_asr_adapter()
+    await asyncio.to_thread(asr_probe.warm)
+    print(f"[Local Runtime] Starting WebSocket server on ws://127.0.0.1:{PORT} ...")
     async with websockets.serve(handler, "127.0.0.1", PORT):
-        print(f"[Hermes Voice Server] Running and listening on ws://127.0.0.1:{PORT}/ws")
+        print(f"[Local Runtime] Running and listening on ws://127.0.0.1:{PORT}/ws")
         await asyncio.Future()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

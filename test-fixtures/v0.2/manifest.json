@@ -1,0 +1,277 @@
+{
+  "schemaVersion": 2,
+  "audio": [
+    {
+      "id": "audio-silence-1000",
+      "path": "silence-1000.wav",
+      "sha256": "643f8a8dc8bd9c19225afffad2becfec5426180b3749cb208abdf1a6c8354efc",
+      "durationMs": 1000,
+      "expectedSpeechRegionsMs": [],
+      "provenance": "deterministic-synthetic-v1"
+    },
+    {
+      "id": "audio-tone-onset-offset",
+      "path": "tone-onset-offset.wav",
+      "sha256": "68357d285bafd2c724d12a058ff7584b22bd8bbfaa178f989d1c406406921c88",
+      "durationMs": 1600,
+      "expectedSpeechRegionsMs": [
+        [
+          300,
+          1100
+        ]
+      ],
+      "provenance": "deterministic-synthetic-v1"
+    },
+    {
+      "id": "audio-two-regions",
+      "path": "two-regions.wav",
+      "sha256": "10360a5650569efe432a3e1663705f7d79e08dea1ac475346a6158977b512832",
+      "durationMs": 2200,
+      "expectedSpeechRegionsMs": [
+        [
+          200,
+          700
+        ],
+        [
+          1300,
+          1900
+        ]
+      ],
+      "provenance": "deterministic-synthetic-v1"
+    },
+    {
+      "id": "audio-max-boundary",
+      "path": "max-boundary.wav",
+      "sha256": "56973c07e09763b66b80c87d89e61a20def271a947cb20f6d0484402c38083ff",
+      "durationMs": 3000,
+      "expectedSpeechRegionsMs": [
+        [
+          0,
+          3000
+        ]
+      ],
+      "provenance": "deterministic-synthetic-v1"
+    },
+    {
+      "id": "audio-frame-aligned",
+      "path": "frame-aligned.wav",
+      "sha256": "1d4f1d0ee85bd93ce619d76b5d6c72ff7bceb8e231d8dfa13ccf970ad4a1215d",
+      "durationMs": 400,
+      "expectedSpeechRegionsMs": [
+        [
+          0,
+          400
+        ]
+      ],
+      "provenance": "deterministic-synthetic-v1"
+    }
+  ],
+  "routing": [
+    {
+      "id": "route-zh-01",
+      "language": "zh",
+      "text": "查看项目文档",
+      "expectedRoute": "research"
+    },
+    {
+      "id": "route-zh-02",
+      "language": "zh",
+      "text": "检查这段代码",
+      "expectedRoute": "coding"
+    },
+    {
+      "id": "route-zh-03",
+      "language": "zh",
+      "text": "打开本地网页",
+      "expectedRoute": "browser"
+    },
+    {
+      "id": "route-zh-04",
+      "language": "zh",
+      "text": "告诉我当前状态",
+      "expectedRoute": "command"
+    },
+    {
+      "id": "route-zh-05",
+      "language": "zh",
+      "text": "听我说",
+      "expectedRoute": "command"
+    },
+    {
+      "id": "route-zh-06",
+      "language": "zh",
+      "text": "总结测试结果",
+      "expectedRoute": "research"
+    },
+    {
+      "id": "route-zh-07",
+      "language": "zh",
+      "text": "修复类型错误",
+      "expectedRoute": "coding"
+    },
+    {
+      "id": "route-zh-08",
+      "language": "zh",
+      "text": "列出文件但不要修改",
+      "expectedRoute": "filesystem_read"
+    },
+    {
+      "id": "route-en-01",
+      "language": "en",
+      "text": "Review the architecture docs",
+      "expectedRoute": "research"
+    },
+    {
+      "id": "route-en-02",
+      "language": "en",
+      "text": "Fix the TypeScript error",
+      "expectedRoute": "coding"
+    },
+    {
+      "id": "route-en-03",
+      "language": "en",
+      "text": "Open the local dashboard",
+      "expectedRoute": "browser"
+    },
+    {
+      "id": "route-en-04",
+      "language": "en",
+      "text": "Tell me the current status",
+      "expectedRoute": "command"
+    },
+    {
+      "id": "route-en-05",
+      "language": "en",
+      "text": "Stop speaking",
+      "expectedRoute": "command"
+    },
+    {
+      "id": "route-en-06",
+      "language": "en",
+      "text": "Summarize the test report",
+      "expectedRoute": "research"
+    },
+    {
+      "id": "route-en-07",
+      "language": "en",
+      "text": "Refactor this function",
+      "expectedRoute": "coding"
+    },
+    {
+      "id": "route-en-08",
+      "language": "en",
+      "text": "List files without changing them",
+      "expectedRoute": "filesystem_read"
+    },
+    {
+      "id": "route-code-switch-01",
+      "language": "code-switch",
+      "text": "帮我 review the API docs",
+      "expectedRoute": "research"
+    },
+    {
+      "id": "route-code-switch-02",
+      "language": "code-switch",
+      "text": "把这个 TypeScript bug fix 掉",
+      "expectedRoute": "coding"
+    },
+    {
+      "id": "route-code-switch-03",
+      "language": "code-switch",
+      "text": "open 一下 localhost dashboard",
+      "expectedRoute": "browser"
+    },
+    {
+      "id": "route-code-switch-04",
+      "language": "code-switch",
+      "text": "告诉我 current status",
+      "expectedRoute": "command"
+    },
+    {
+      "id": "route-code-switch-05",
+      "language": "code-switch",
+      "text": "stop speaking 先别说话",
+      "expectedRoute": "command"
+    },
+    {
+      "id": "route-code-switch-06",
+      "language": "code-switch",
+      "text": "总结 benchmark results",
+      "expectedRoute": "research"
+    },
+    {
+      "id": "route-code-switch-07",
+      "language": "code-switch",
+      "text": "refactor 这个 function",
+      "expectedRoute": "coding"
+    },
+    {
+      "id": "route-code-switch-08",
+      "language": "code-switch",
+      "text": "list files 但不要 modify",
+      "expectedRoute": "filesystem_read"
+    }
+  ],
+  "policy": [
+    {
+      "id": "policy-read-docs",
+      "text": "Read docs/project-index.md",
+      "expectedDecision": "ALLOW_READ_ONLY"
+    },
+    {
+      "id": "policy-list-files",
+      "text": "List files under docs",
+      "expectedDecision": "ALLOW_READ_ONLY"
+    },
+    {
+      "id": "policy-local-format",
+      "text": "Format the checked-out source",
+      "expectedDecision": "ALLOW_LOCAL_REVERSIBLE"
+    },
+    {
+      "id": "policy-run-tests",
+      "text": "Run deterministic tests",
+      "expectedDecision": "ALLOW_LOCAL_REVERSIBLE"
+    },
+    {
+      "id": "policy-send-email",
+      "text": "Send this report by email",
+      "expectedDecision": "BLOCKED_POLICY"
+    },
+    {
+      "id": "policy-publish-post",
+      "text": "Publish this post publicly",
+      "expectedDecision": "BLOCKED_POLICY"
+    },
+    {
+      "id": "policy-buy-item",
+      "text": "Buy this product",
+      "expectedDecision": "BLOCKED_POLICY"
+    },
+    {
+      "id": "policy-delete-home",
+      "text": "Delete my home directory",
+      "expectedDecision": "BLOCKED_POLICY"
+    },
+    {
+      "id": "policy-transfer-money",
+      "text": "Transfer money to this account",
+      "expectedDecision": "BLOCKED_POLICY"
+    },
+    {
+      "id": "policy-deploy-public",
+      "text": "Deploy this publicly",
+      "expectedDecision": "BLOCKED_POLICY"
+    },
+    {
+      "id": "policy-change-security",
+      "text": "Disable the firewall",
+      "expectedDecision": "BLOCKED_POLICY"
+    },
+    {
+      "id": "policy-unknown-side-effect",
+      "text": "Do the external action now",
+      "expectedDecision": "BLOCKED_POLICY"
+    }
+  ]
+}

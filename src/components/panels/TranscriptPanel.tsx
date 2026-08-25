@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from 'react';
-import { TranscriptTurn } from '../../state/transcriptStore';
-import { ManifestStore } from '../../state/manifestStore';
-import { MessageSquare, User, FileCode, AlertTriangle, X } from 'lucide-react';
-import { getAgentIcon } from '../constellation/SatelliteOrb';
+import React, { useEffect, useRef } from "react";
+import { TranscriptTurn } from "../../state/transcriptStore";
+import { ManifestStore } from "../../state/manifestStore";
+import { MessageSquare, User, FileCode, AlertTriangle, X } from "lucide-react";
+import { getAgentIcon } from "../constellation/SatelliteOrb";
 
 export interface TranscriptPanelProps {
   turns: TranscriptTurn[];
@@ -19,8 +19,8 @@ export const TranscriptPanel: React.FC<TranscriptPanelProps> = ({
 
   // Auto-scroll to bottom on new text
   useEffect(() => {
-    if (typeof scrollEndRef.current?.scrollIntoView === 'function') {
-      scrollEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (typeof scrollEndRef.current?.scrollIntoView === "function") {
+      scrollEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [turns]);
 
@@ -56,7 +56,9 @@ export const TranscriptPanel: React.FC<TranscriptPanelProps> = ({
           <div className="flex flex-col items-center justify-center h-full text-center text-slate-500 py-12">
             <MessageSquare className="w-8 h-8 mb-2 opacity-40" />
             <p className="text-xs">No transcripts yet.</p>
-            <p className="text-[11px] text-slate-600 mt-1">Speak or type a prompt to start.</p>
+            <p className="text-[11px] text-slate-600 mt-1">
+              Speak or type a prompt to start.
+            </p>
           </div>
         ) : (
           turns.map((turn) => (
@@ -65,7 +67,9 @@ export const TranscriptPanel: React.FC<TranscriptPanelProps> = ({
               {turn.userText && (
                 <div className="flex items-start justify-end gap-2">
                   <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-indigo-600 px-3.5 py-2 text-sm text-white shadow-md">
-                    <p className="whitespace-pre-wrap break-words">{turn.userText}</p>
+                    <p className="whitespace-pre-wrap break-words">
+                      {turn.userText}
+                    </p>
                     {turn.isPartialUserText && (
                       <span className="inline-block w-1.5 h-3 ml-1 bg-white/60 animate-pulse align-middle" />
                     )}
@@ -80,11 +84,10 @@ export const TranscriptPanel: React.FC<TranscriptPanelProps> = ({
               {turn.agentResponses.map((resp, i) => {
                 const agent = manifestStore.getAgentById(resp.agentId) || {
                   id: resp.agentId,
-                  name: resp.agentId === 'hermes' ? 'Agent' : resp.agentId,
-                  color: '#6366F1',
-                  icon: 'brain',
+                  name: resp.agentId,
+                  color: "#6366F1",
+                  icon: "brain",
                 };
-                const displayName = agent.name === 'Hermes' ? 'Agent' : agent.name;
 
                 return (
                   <div key={i} className="flex items-start gap-2.5">
@@ -96,8 +99,11 @@ export const TranscriptPanel: React.FC<TranscriptPanelProps> = ({
                     </div>
                     <div className="flex-1 max-w-[85%] rounded-2xl rounded-tl-sm bg-surface-elevated border border-slate-700/60 px-3.5 py-2.5 text-sm text-slate-200 shadow-sm">
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-xs font-semibold text-white" style={{ color: agent.color }}>
-                          {displayName}
+                        <span
+                          className="text-xs font-semibold text-white"
+                          style={{ color: agent.color }}
+                        >
+                          {agent.name}
                         </span>
                       </div>
                       <p className="whitespace-pre-wrap break-words leading-relaxed text-xs sm:text-sm">

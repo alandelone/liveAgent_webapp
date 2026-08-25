@@ -1,24 +1,26 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
 
 export default defineConfig({
-  base: '/live/',
+  base: "/live/",
   plugins: [react()],
   server: {
-    allowedHosts: true,
-    host: true,
+    allowedHosts: ["127.0.0.1", "localhost"],
+    host: "127.0.0.1",
     port: 5173,
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
   test: {
     globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
+    environment: "jsdom",
+    setupFiles: "./src/test/setup.ts",
+    include: ["src/**/*.test.{ts,tsx}"],
+    maxWorkers: 4,
   },
 });

@@ -62,3 +62,77 @@
   - Split the protocol document into an honest implemented-v1 baseline and v0.2 target requirements; recorded server-authoritative VAD, manifest-driven orchestrator identity, non-replayable audio, and legacy hardcoded `hermes` IDs as migration work.
   - Reset mission status to Phase 2 Discovery for architecture governance, supported Linux GPU runtime, strategic tracing/logging, and deterministic voice evidence.
   - Archived the old verification scope, rewrote all active stage gates, and verified the baseline still passes 41/41 tests with 0 TypeScript errors.
+- **2026-08-25 00:55**: Completed deterministic Phase 2 work for FEAT-014, FEAT-016, and FEAT-017:
+  - Accepted the WSL2 Debian/localhost-only runtime topology, protocol-v2 limits, trace/log policy, deterministic fixture taxonomy, and falsifiable experiment matrix.
+  - Installed an independent Debian WSL2 distro without altering the broken Ubuntu registration; proved Linux-side RTX 4070 Ti visibility and provisioned pinned uv plus CPython 3.12.11 under unprivileged user `liveagent`.
+  - Removed production `hermes` orchestrator-ID behavior from manifest, mode, central state, transcript, constellation, and compatibility gateway paths; Hermes remains only a worker/escalation adapter or cosmetic legacy name.
+  - Added protocol-v2 capture, policy, acknowledgement, and snapshot schemas; canonical trace/public projection; bounded redacting JSONL logs; deterministic statistics; 5 synthetic audio fixtures, 24 multilingual routing cases, and 12 policy cases.
+  - Upgraded the frontend toolchain to Node 24.19.0, Vite 8.2.2, Vitest 4.1.11, TypeScript 7.0.2, and a clean lockfile. Security audit improved from 5 findings (including critical/high) to 0.
+  - Verified 48/48 Vitest assertions, 6/6 Python Runtime tests, fixture byte identity, clean TypeScript, successful production build, and a 500-turn logging benchmark (3.854 MiB, p95 enqueue 0.0258 ms, zero drops).
+  - FEAT-014, FEAT-016, and FEAT-017 now pass with evaluator evidence. FEAT-015 remains false until the pinned Qwen3-ASR model revision and live streaming GPU smoke run are recorded.
+- **2026-08-25 02:51**: Continued FEAT-015 live-model verification:
+  - Re-ran the complete deterministic gate with 48/48 Vitest assertions, 6/6 Python runtime tests, byte-identical fixtures, clean TypeScript, successful Vite production build, and zero npm audit findings.
+  - Started the three-cold/ten-warm Qwen3-ASR hardware smoke. A tuning restart enabled 16-way Xet transfer but recreated the main `.incomplete` shard from zero; the completed 478 MB shard remained cached. Recorded the non-resumable temporary-shard behavior in `repomemory/findings.md` and deployment guidance, and left the restarted download uninterrupted.
+- **2026-08-25 03:48**: Passed FEAT-015 and closed Phase 2:
+  - Cached immutable `Qwen/Qwen3-ASR-1.7B` revision `7278e1e70fe206f11671096ffdd38061171dd6e5` and exposed worker stderr in the smoke harness.
+  - Replaced vLLM's unsuitable default 65k/21-audio profile with a measured single-stream envelope: 4k context, one audio item, one sequence, 1024 batched tokens, eager mode, and fixed 512 MiB KV cache.
+  - Passed 3/3 cold starts and 10/10 warm streaming transcriptions. Warm median was 1361.868 ms (first iteration includes warm-up); loaded board memory peaked at 7259 MiB and left 5023 MiB recovery headroom.
+  - Marked FEAT-015 true only after evaluator evidence and advanced the active gate to Discovery for FEAT-018 through FEAT-021.
+- **2026-08-25 04:08**: Completed and verified FEAT-018 through FEAT-021:
+  - Added a stateful 48/44.1 kHz browser resampler, mono downmix, exact 320-sample/640-byte framing, AudioWorklet capture, applied-setting reporting, and a bounded high/low-watermark uplink that drops the oldest unsent audio.
+  - Removed Web Speech from the authoritative path. Text and PTT remain fallbacks; the Local Runtime now owns speech boundaries and transcripts.
+  - Added bounded per-session ingress, deterministic/energy/real-Silero probability adapters, pre-roll/onset/endpoint/max-duration VAD, fake/pinned-Qwen ASR adapters, transcript stability/glossary/revision logic, and asynchronous VoiceSession composition.
+  - Connected protocol-v2 binary frames in `server.py` and passed the WebSocket PCM/VAD/fake-ASR smoke.
+  - Passed 54/54 frontend assertions, 13/13 Python tests, fixtures, typecheck, build, and zero-vulnerability audit. The live Silero/Qwen adapter produced 15 partials plus a non-empty final at revision `7278e1e...`, peaked at 7261 MiB, and retained 5021 MiB headroom.
+  - Marked FEAT-018 through FEAT-021 true only after evaluator evidence and advanced to Discovery for FEAT-022 through FEAT-026.
+- **2026-08-25 04:27**: Implemented the deterministic portion of FEAT-022 through FEAT-026:
+  - Accepted sequential Discovery, Tech Design, and Execution gates for bilingual exact commands, deny-first first-release policy, strict Supervisor routes, bounded scheduling, Hermes escalation, and cancellation isolation.
+  - Added `runtime/policy.py`, `runtime/supervisor.py`, `runtime/scheduler.py`, `runtime/hermes.py`, and `runtime/orchestrator.py` with lazy live-model boundaries and dependency-injected deterministic seams.
+  - Replaced the gateway's profile-scanning/direct-Hermes control path with one Local Orchestrator entry point shared by text and authoritative voice finals. The manifest now exposes `local-supervisor` as the sole orchestrator and Hermes as a side worker.
+  - Added strict bilingual route/policy, schema, queue/concurrency, deadline/heartbeat, retry/idempotency, circuit-breaker, cancellation-scope, and late-result-suppression tests. Current deterministic evidence is 54/54 frontend assertions and 27/27 Python tests; typecheck/build and the expanded gateway smoke pass.
+  - Pinned official `Qwen/Qwen3-1.7B` revision `70d244cc...`, added bitsandbytes 0.50.0 to the model environment/requirements, and started the uninterrupted official-weight NF4 target-host smoke. BF16 comparison and ASR co-residency remain required before this gate can pass.
+- **2026-08-25 05:11**: Completed and verified FEAT-022 through FEAT-026:
+  - Passed 54/54 frontend assertions, 27/27 Python runtime tests, fixture verification, typecheck, production build, zero-vulnerability audit, expanded gateway smoke, Linux/GPU preflight, and whitespace validation.
+  - Verified the pinned Qwen3-1.7B Supervisor with strict structured output: the exported NF4 artifact passed 24/24 schema and route cases at 757.040 ms p50 with 1288 MiB allocated; BF16 passed 24/24 schema and 23/24 routes at 623.158 ms p50 with 3282 MiB allocated.
+  - Passed an actual Supervisor-only WebSocket service smoke and a post-experiment live Qwen ASR regression smoke with 15 partials, a non-empty final, 7132 MiB loaded board usage, and 5150 MiB recovery headroom.
+  - Falsified safe simultaneous residency on this host across independent-process, CPU-offload, and single-process experiments. Added mutually exclusive voice and Supervisor deployment profiles and a startup refusal for the unsafe real-ASR plus real-Supervisor pairing.
+  - Kept Hermes disabled in deployment because its installed one-shot transport auto-bypasses approvals while loading tools; the bounded adapter is deterministic-tested but awaits an audited read-only transport.
+  - Marked FEAT-022 through FEAT-026 true only after evaluator proof and advanced to Phase 6 Discovery for FEAT-027 through FEAT-029.
+- **2026-08-25 08:59**: Implemented and live-tested the Phase 6 response/playback path; evaluator closure remains pending acoustic microphone proof:
+  - Selected pinned Apache-2.0 Kokoro `hexgrad/Kokoro-82M-v1.1-zh` revision `01e7505b...` as the realtime bilingual backend. The Windows CPU service passed 9/9 Chinese/English/code-switch synth cases at 820.753 ms median and 1318.440 ms p95; live ASR overlap peaked at 7357 MiB and retained 4925 MiB board headroom. Official Qwen TTS remains validation-only after a 6966 ms median and unsafe ASR/TTS co-residency.
+  - Added the bounded TTS service/adapters, response revisions and clause prefetch, strict correlated TTS markers plus binary PCM, AudioWorklet ring-buffer playback, output-reference suppression, response-only interruption, and text-only failure fallback.
+  - Added non-Docker Windows/WSL NAT deployment scripts with private-interface TTS binding, provenance/health checks, capacity preflight, hidden process startup, verified stop/restart, stable UI checks, and recorded process state.
+  - Real Chrome testing exposed and fixed whitespace-sensitive PONG parsing, Blob/cross-realm binary normalization, development lifecycle resubscription, base-path AudioWorklet 404s, and unpaced buffer overflow.
+  - Final Chrome bilingual playback consumed all 82 received chunks / 193,200 PCM frames with peak RMS-derived UI level 0.3322, zero underrun and zero overrun. Local response interruption stopped the worklet in 0.200 ms and did not cancel the completed background task.
+  - Current deterministic evaluator evidence is 62/62 frontend assertions, 38/38 Python tests, clean typecheck, successful production build (278.67 kB JS / 79.77 kB gzip), byte-identical fixtures, and zero npm audit findings.
+  - Windows CUDA Kokoro provisioning is still running in an isolated environment. GPU becomes the default only if isolated bilingual and real-ASR-overlap evidence is repeatably safe; the proven CPU path remains intact.
+- **2026-08-25 20:38**: Falsified the GPU Kokoro deployment candidate and verified recovery:
+  - Installed exact Windows Torch `2.13.0+cu130`; fixed Kokoro 0.9.4 CUDA voice-pack handling by retaining `torch.FloatTensor` packs on CPU before the pipeline moves them to the model device.
+  - The isolated CUDA service passed 9/9 bilingual/code-switch cases at 209.752 ms median and 330.119 ms p95 warm synthesis, using roughly 0.5 GiB additional board memory.
+  - The mandatory ASR-overlap test caused an unexpected full Windows restart while vLLM loaded. System evidence records Kernel-Power 41 and EventLog 6008 at 20:29, with the prior shutdown at 20:28:35. CUDA Kokoro is rejected for deployment; Qwen ASR retains exclusive GPU priority and CPU Kokoro remains the launcher default.
+  - Cleaned stale deployment state after reboot, replaced the Vite development server with build-plus-production-preview startup, lengthened deterministic gateway readiness diagnostics, passed the correlated-PCM gateway smoke, and restored all three production health checks.
+- **2026-08-25 20:44**: Re-verified the recovered production profile:
+  - Launcher state records `ttsDevice: cpu` and `uiMode: production-preview`; TTS provenance/device, UI, GPU isolation, and gateway health checks all pass.
+  - Production Chrome again received 82/82 chunks and rendered all 193,200 PCM frames with peak audio level 0.4226, zero underruns, zero overruns, and no heartbeat warnings over 22 seconds.
+  - Added startup/status guards that reject or flag any concurrent `venv-tts-gpu`/CUDA Kokoro process before Qwen ASR can load.
+  - Full regression passed 62/62 frontend assertions, 38/38 Python tests, typecheck, production build, fixture verification, zero-vulnerability audit, 22-file Python compilation, whitespace check, and deterministic correlated-PCM gateway smoke.
+  - Remaining Phase 6 evidence is only the user-authorized target-Chrome microphone/AEC acoustic loopback. FEAT-027 through FEAT-029 remain false until that proof is recorded.
+- **2026-08-25 20:58**: Completed target-Chrome microphone/AEC and echo-loopback evidence; near-end human interruption timing remains open:
+  - Chrome applied `echoCancellation=true`, `noiseSuppression=true`, `autoGainControl=true`, 48 kHz mono capture, so the live UI declared `hands_free` rather than silently assuming AEC.
+  - With microphone capture active and PTT disabled, the production response received 82/82 chunks and rendered 193,200/193,200 frames with zero underrun, zero overrun, zero protocol errors, and zero authoritative interruptions. This proves speaker echo did not self-interrupt.
+  - An independent bilingual WAV played through the Windows default output during browser TTS was also rejected as output echo: the response completed and authoritative interruption count remained zero.
+  - Added production-readable mic/AEC and authoritative interruption metrics, plus a deterministic frontend test for server-VAD-to-browser-stop measurement. Full regression now passes 63/63 frontend assertions and 38/38 Python tests, with clean lint/build, fixtures, and zero audit findings.
+  - Moved the deterministic gateway smoke to isolated port 18765 so it cannot accidentally attach to the already-running production gateway; the corrected smoke passes while production remains healthy.
+  - The required near-end acoustic interruption latency has not yet been captured because no human speech was detected during the prompted window. FEAT-027 through FEAT-029 remain false.
+- **2026-08-25 21:05**: Improved real-microphone observability after the extended human-interruption window produced no detected speech:
+  - Confirmed the active Windows endpoints are Bluetooth headset input/output. System-rendered WAV audio is therefore not a valid substitute for a human near-end source and can be isolated from the headset microphone in addition to browser AEC suppression.
+  - Added frame-by-frame RMS measurement from the actual 16 kHz PCM capture path, propagated it through `VoiceController`, and exposed `data-mic-rms` plus session peak telemetry in the production UI. The central orb now receives real microphone energy while listening rather than only simulated values.
+  - Added exact PCM RMS/teardown assertions. Full regression remains 63/63 frontend assertions and 38/38 Python tests with clean lint and production build.
+  - Rebuilt and restarted the production profile; TTS, UI, GPU isolation, and gateway health checks all pass. Near-end human speech is still required for the final Phase 6 latency record.
+- **2026-08-25 21:45**: Completed Phase 6 acoustic proof and Phase 7 release validation:
+  - Human near-end speech reached captured-PCM peak 0.675 and interrupted live playback in 0.100 ms with zero underrun, overrun, or protocol errors. FEAT-027 through FEAT-029 passed under the archived Phase 6 evaluator report.
+  - Replaced the Chinese stop-speaking phrase with `听我说` across runtime commands, fixtures, corpus, documentation, and tests; the obsolete phrase is absent from project sources.
+  - Added deterministic ASR scoring, a versioned 12-WAV Mandarin/English/code-switch corpus, production WebSocket evaluation, GPU/process evidence, 100-turn deterministic soak, 20-turn production terminal sample, and controlled recovery verification.
+  - Release results: zh CER 0.000, en WER 0.000, code-switch MER 0.087; key terms/commands/routes/terminals 100%; first-audio p50 2604.404 ms and p95 2963.833 ms; one ASR engine, 6097 MiB used, 5898 MiB free, 47 C.
+  - Full regression passed 63/63 frontend assertions, 44/44 Python tests, fixtures, lint, build, zero-vulnerability audit, and isolated gateway smoke. Controlled stop/start restored all four production health checks.
+  - Evaluator marked FEAT-030 through FEAT-032 true. All FEAT-001 through FEAT-032 now pass; v0.2.0 is complete and production remains running.

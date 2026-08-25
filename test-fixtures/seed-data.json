@@ -9,11 +9,12 @@
     "type": "AGENT_MANIFEST",
     "seq": 1,
     "agents": [
-      { "id": "hermes", "name": "Hermes", "color": "#6366F1", "icon": "brain", "isOrchestrator": true },
+      { "id": "local-supervisor", "name": "Local Supervisor", "color": "#6366F1", "icon": "brain", "isOrchestrator": true },
       { "id": "research", "name": "Research", "color": "#A855F7", "icon": "book-open" },
       { "id": "coding", "name": "Coding", "color": "#3B82F6", "icon": "code" },
       { "id": "browser", "name": "Browser", "color": "#10B981", "icon": "globe" },
-      { "id": "automation", "name": "Automation", "color": "#F59E0B", "icon": "cpu" }
+      { "id": "automation", "name": "Automation", "color": "#F59E0B", "icon": "cpu" },
+      { "id": "hermes", "name": "Hermes", "color": "#10B981", "icon": "cpu", "isOrchestrator": false }
     ]
   },
   "initialTranscripts": [
@@ -26,7 +27,7 @@
     {
       "type": "TEXT_DELTA",
       "seq": 3,
-      "agentId": "hermes",
+      "agentId": "local-supervisor",
       "turnId": "turn_001",
       "delta": "Understood. Delegating documentation indexing to Research and diagram generation to Coding.",
       "isFinal": true
@@ -38,7 +39,7 @@
       "event": {
         "type": "AGENT_STATE",
         "seq": 10,
-        "agentId": "hermes",
+        "agentId": "local-supervisor",
         "state": "thinking"
       }
     },
@@ -47,7 +48,7 @@
       "event": {
         "type": "AGENT_STATE",
         "seq": 11,
-        "agentId": "hermes",
+        "agentId": "local-supervisor",
         "state": "delegating"
       }
     },
@@ -57,7 +58,7 @@
         "type": "TASK_START",
         "seq": 12,
         "taskId": "task-501",
-        "fromAgentId": "hermes",
+        "fromAgentId": "local-supervisor",
         "toAgentId": "research",
         "taskName": "Scan documentation in /docs"
       }
@@ -107,7 +108,7 @@
       "event": {
         "type": "AGENT_STATE",
         "seq": 17,
-        "agentId": "hermes",
+        "agentId": "local-supervisor",
         "state": "speaking"
       }
     },
@@ -116,8 +117,15 @@
       "event": {
         "type": "TTS_START",
         "seq": 18,
-        "agentId": "hermes",
-        "turnId": "turn_001"
+        "agentId": "local-supervisor",
+        "turnId": "turn_001",
+        "streamId": "fixture-tts-001",
+        "format": {
+          "encoding": "pcm_f32le",
+          "sampleRateHz": 24000,
+          "channels": 1,
+          "chunkFrames": 2400
+        }
       }
     },
     {
@@ -125,7 +133,7 @@
       "event": {
         "type": "TEXT_DELTA",
         "seq": 19,
-        "agentId": "hermes",
+        "agentId": "local-supervisor",
         "turnId": "turn_001",
         "delta": "Research complete. The architecture defines a 4-layer system with orb-based spatial visualization.",
         "isFinal": true
@@ -136,8 +144,10 @@
       "event": {
         "type": "TTS_END",
         "seq": 20,
-        "agentId": "hermes",
-        "turnId": "turn_001"
+        "agentId": "local-supervisor",
+        "turnId": "turn_001",
+        "streamId": "fixture-tts-001",
+        "outcome": "COMPLETED"
       }
     },
     {
@@ -145,13 +155,13 @@
       "event": {
         "type": "AGENT_STATE",
         "seq": 21,
-        "agentId": "hermes",
+        "agentId": "local-supervisor",
         "state": "idle"
       }
     }
   ],
   "reconnectScenario": {
-    "description": "Simulate client reconnecting after missing events seq 14-16. Client sends CLIENT_HELLO with lastSeq=13. Hermes replays events 14, 15, 16 then resumes at seq 17.",
+    "description": "Simulate client reconnecting after missing events seq 14-16. Client sends CLIENT_HELLO with lastSeq=13. Local Runtime replays events 14, 15, 16 then resumes at seq 17.",
     "clientHello": {
       "type": "CLIENT_HELLO",
       "protocolVersion": 1,

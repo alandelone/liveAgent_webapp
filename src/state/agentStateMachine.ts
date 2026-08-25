@@ -1,5 +1,5 @@
-import { AgentRoleState } from '../types/protocol';
-import { HermesEventBus } from '../protocol/eventBus';
+import { AgentRoleState } from "../types/protocol";
+import { HermesEventBus } from "../protocol/eventBus";
 
 export interface StateMachineSnapshot {
   mainState: AgentRoleState;
@@ -16,13 +16,14 @@ export interface StateMachineSnapshot {
 export type StateMachineListener = (snapshot: StateMachineSnapshot) => void;
 
 export class AgentStateMachine {
-  private mainState: AgentRoleState = 'idle';
+  private mainState: AgentRoleState = "idle";
   private detail?: string;
   private currentTurnId: string | null = null;
   private isOptimistic = false;
   private lastStateChangeTimestamp: number = Date.now();
   private listeners: Set<StateMachineListener> = new Set();
   private unsubscribers: Array<() => void> = [];
+  private orchestratorId: string | null = null;
 
   constructor(eventBus?: HermesEventBus) {
     if (eventBus) {
@@ -34,37 +35,52 @@ export class AgentStateMachine {
     this.unsubscribers.forEach((u) => u());
     this.unsubscribers = [];
 
-    // Reconcile with authoritative AGENT_STATE from Hermes
-    const u1 = eventBus.on('AGENT_STATE', (ev) => {
-      if (ev.agentId === 'hermes' || !ev.agentId) {
+    const u0 = eventBus.on("AGENT_MANIFEST", (ev) => {
+      this.orchestratorId =
+        ev.agents.find((agent) => agent.isOrchestrator)?.id ?? null;
+    });
+
+    // Reconcile with authoritative orchestrator state.
+    const u1 = eventBus.on("AGENT_STATE", (ev) => {
+      if (ev.agentId === this.orchestratorId) {
         this.reconcileState(ev.state, ev.detail);
       }
     });
 
-    // When Hermes starts speaking via TTS
-    const u2 = eventBus.on('TTS_START', (ev) => {
-      if (ev.agentId === 'hermes' || !ev.agentId) {
+    // When the orchestrator starts speaking via TTS
+    const u2 = eventBus.on("TTS_START", (ev) => {
+      if (ev.agentId === this.orchestratorId) {
         this.currentTurnId = ev.turnId;
-        this.reconcileState('speaking');
+        this.reconcileState("speaking");
       }
     });
 
     // When TTS ends
-    const u3 = eventBus.on('TTS_END', () => {
-      if (this.mainState === 'speaking') {
-        this.reconcileState('idle');
+    const u3 = eventBus.on("TTS_END", (ev) => {
+      if (ev.agentId === this.orchestratorId && this.mainState === "speaking") {
+        this.reconcileState("idle");
       }
     });
 
     // When STT final arrives
-    const u4 = eventBus.on('STT_FINAL', (ev) => {
+    const u4 = eventBus.on("STT_FINAL", (ev) => {
       this.currentTurnId = ev.turnId;
-      if (this.mainState === 'listening') {
-        this.reconcileState('thinking');
+      if (this.mainState === "listening") {
+        this.reconcileState("thinking");
       }
     });
 
-    this.unsubscribers.push(u1, u2, u3, u4);
+    const u5 = eventBus.on("USER_SPEECH_START", (ev) => {
+      this.currentTurnId = ev.turnId;
+      this.reconcileState("listening", "Speech detected");
+    });
+
+    const u6 = eventBus.on("USER_SPEECH_END", (ev) => {
+      this.currentTurnId = ev.turnId;
+      this.reconcileState("thinking", "Transcribing speech...");
+    });
+
+    this.unsubscribers.push(u0, u1, u2, u3, u4, u5, u6);
   }
 
   /**
@@ -79,9 +95,12 @@ export class AgentStateMachine {
   }
 
   /**
-   * Reconcile local state with authoritative Hermes event
+   * Reconcile local state with an authoritative Runtime event
    */
-  public reconcileState(authoritativeState: AgentRoleState, detail?: string): void {
+  public reconcileState(
+    authoritativeState: AgentRoleState,
+    detail?: string,
+  ): void {
     this.mainState = authoritativeState;
     this.detail = detail;
     this.isOptimistic = false;
@@ -99,10 +118,11 @@ export class AgentStateMachine {
       mainState: this.mainState,
       detail: this.detail,
       currentTurnId: this.currentTurnId,
-      isListening: this.mainState === 'listening',
-      isSpeaking: this.mainState === 'speaking',
-      isThinking: this.mainState === 'thinking' || this.mainState === 'delegating',
-      isExecuting: this.mainState === 'executing',
+      isListening: this.mainState === "listening",
+      isSpeaking: this.mainState === "speaking",
+      isThinking:
+        this.mainState === "thinking" || this.mainState === "delegating",
+      isExecuting: this.mainState === "executing",
       isOptimistic: this.isOptimistic,
       lastStateChangeTimestamp: this.lastStateChangeTimestamp,
     };
@@ -117,7 +137,7 @@ export class AgentStateMachine {
   }
 
   public reset(): void {
-    this.mainState = 'idle';
+    this.mainState = "idle";
     this.detail = undefined;
     this.currentTurnId = null;
     this.isOptimistic = false;
@@ -131,7 +151,7 @@ export class AgentStateMachine {
       try {
         listener(snapshot);
       } catch (err) {
-        console.error('[AgentStateMachine] Error in listener:', err);
+        console.error("[AgentStateMachine] Error in listener:", err);
       }
     });
   }
